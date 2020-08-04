@@ -5,6 +5,7 @@ from google.cloud import storage
 import warnings
 from datetime import datetime, timedelta
 from dateutil.parser import parse as parse_date
+import xarray as xr
 
 def find_abi_blobs(date, satellite=16, product='Rad', view='C', mode=3, channel=1):
     storage_client = storage.Client()
@@ -30,7 +31,7 @@ def download_goes_blobs(blob_list, save_dir='./', replicate_path=True, check_dow
         blob_path, blob_name = os.path.split(blob.name)
 
         if replicate_path:
-            save_path = os.path.join(*([save_dir] + blob_path.split('/')[1:]))
+            save_path = os.path.join(save_dir, blob_path)
         else:
             save_path = save_dir
         if not os.path.isdir(save_path):
@@ -66,7 +67,7 @@ def find_abi_files(date, satellite=16, product='Rad', view='C', mode=3, channel=
         blob_path, blob_name = os.path.split(blob.name)
 
         if replicate_path:
-            save_path = os.path.join(*([save_dir] + blob_path.split('/')[1:]))
+            save_path = os.path.join(save_dir, blob_path)
         else:
             save_path = save_dir
         if not os.path.isdir(save_path):
@@ -105,7 +106,7 @@ def find_glm_files(date, satellite=16, save_dir='./', replicate_path=True, check
         blob_path, blob_name = os.path.split(blob.name)
 
         if replicate_path:
-            save_path = os.path.join(*([save_dir] + blob_path.split('/')[1:]))
+            save_path = os.path.join(save_dir, blob_path)
         else:
             save_path = save_dir
         if not os.path.isdir(save_path):
