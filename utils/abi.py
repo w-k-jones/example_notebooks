@@ -15,3 +15,46 @@ def get_abi_lat_lon(dataset, dtype=float):
     lons[lons>=1E30] = np.nan
     lats[lats>=1E30] = np.nan
     return lats, lons
+
+def get_abi_ref(dataset, check=False, dtype=None):
+    """
+    Get reflectance values from level 1 ABI datasets (for channels 1-6)
+    """
+    ref = dataset.Rad * dataset.kappa0
+    if check:
+        DQF = dataset.DQF
+        ref[DQF<0] = np.nan
+        ref[DQF>1] = np.nan
+    if dtype == None:
+        return ref
+    else:
+        return ref.astype(dtype)
+
+def get_abi_bt(dataset, check=False, dtype=None):
+    """
+    Get brightness temeprature values for level 1 ABI datasets (for channels 7-16)
+    """
+    bt = (dataset.planck_fk2 / (np.log((dataset.planck_fk1 / dataset.Rad) + 1)) - dataset.planck_bc1) / dataset.planck_bc2
+    if check:
+        DQF = dataset.DQF
+        bt[DQF<0] = np.nan
+        bt[DQF>1] = np.nan
+    if dtype == None:
+        return bt
+    else:
+        return bt.astype(dtype)
+
+def get_abi_da(dataset, check=False, dtype=None):
+    """
+    Calibrate raw (level 1) ABI data to brightness temperature or reflectances depending on the channel
+    """
+    channel = dataset.band_id.data[0]
+    if channel<7:
+        dataarray = get_abi_ref(dataset, check, dtype)
+    else:
+        dataarray = get_abi_bt(dataset, check, dtype)
+#   Add in attributes
+    dataarray.attrs['goes_imager_projection'] = dataset.goes_imager_projection
+    dataarray.attrs['band_id'] = dataset.band_id
+    dataarray.attrs['band_wavelength'] = dataset.band_wavelength
+    return dataarray
