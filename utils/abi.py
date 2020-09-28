@@ -16,6 +16,11 @@ def get_abi_lat_lon(dataset, dtype=float):
     lats[lats>=1E30] = np.nan
     return lats, lons
 
+def get_abi_x_y(lat, lon, dataset):
+    p = get_abi_proj(dataset)
+    x, y = p(lon, lat)
+    return x/dataset.goes_imager_projection.perspective_point_height, y/dataset.goes_imager_projection.perspective_point_height
+
 def get_abi_ref(dataset, check=False, dtype=None):
     """
     Get reflectance values from level 1 ABI datasets (for channels 1-6)

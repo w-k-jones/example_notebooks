@@ -123,7 +123,55 @@ def find_glm_files(date, satellite=16, save_dir='./', replicate_path=True, check
 
     return files
 
+def find_nexrad_blobs(date, site):
+    storage_client = storage.Client()
+    bucket = storage_client.get_bucket('gcp-public-data-nexrad-l2')
 
+    blob_path = '%04d/%02d/%02d/%s/' % (date.year, date.month, date.day, site)
+    blob_prefix = 'NWS_NEXRAD_NXL2DPBL_%s_%04d%02d%02d%02d' % (site, date.year, date.month, date.day, date.hour)
+
+    blobs = list(bucket.list_blobs(prefix=blob_path+blob_prefix, delimiter='/'))
+
+    return blobs
+
+def download_blobs(blob_list, save_dir='./', replicate_path=True,
+                        n_attempts=0, clobber=False):
+    for blob in blob_list:
+        blob_path, blob_name = os.path.split(blob.name)
+
+        if replicate_path:
+            save_path = os.path.join(save_dir, blob_path)
+        else:
+            save_path = save_dir
+        if not os.path.isdir(save_path):
+            os.makedirs(save_path)
+
+        save_file = os.path.join(save_path, blob_name)
+        if clobber or not os.path.exists(save_file):
+            blob.download_to_filename(save_file)
+
+def find_nexrad_files(date, site, save_dir='./', replicate_path=True, download_missing=False):
+    blobs = find_nexrad_blobs(date, site)
+    files = []
+    for blob in blobs:
+        blob_path, blob_name = os.path.split(blob.name)
+
+        if replicate_path:
+            save_path = os.path.join(save_dir, blob_path)
+        else:
+            save_path = save_dir
+        if not os.path.isdir(save_path):
+            os.makedirs(save_path)
+
+        save_file = os.path.join(save_path, blob_name)
+        if os.path.exists(save_file):
+            files += [save_file]
+        elif download_missing:
+            download_blobs([blob], save_dir=save_dir, replicate_path=replicate_path)
+            if os.path.exists(save_file):
+                files += [save_file]
+
+    return files
 
 def test_find_glm_files():
     blobs = find_glm_blobs(datetime(2018,6,19,19))

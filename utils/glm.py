@@ -7,6 +7,8 @@ from glmtools.io.lightning_ellipse import lightning_ellipse_rev
 from lmatools.coordinateSystems import CoordinateSystem
 from lmatools.grid.fixed import get_GOESR_coordsys
 
+from .abi import get_abi_x_y
+from .dataset import get_ds_bin_edges
 this_ellps=0
 
 # equatorial and polar radii
@@ -33,7 +35,7 @@ class GeostationaryFixedGridSystemAltEllipse(CoordinateSystem):
         Fixed grid coordinates are in radians.
         """
         rf = semiaxes_to_invflattening(semimajor_axis, semiminor_axis)
-        print("Defining alt ellipse for Geostationary with rf=", rf)
+        # print("Defining alt ellipse for Geostationary with rf=", rf)
         self.ECEFxyz = proj4.Proj(proj='geocent',
             a=semimajor_axis, rf=rf)
         self.fixedgrid = proj4.Proj(proj='geos', lon_0=subsat_lon,
@@ -62,7 +64,7 @@ class GeographicSystemAltEllps(CoordinateSystem):
                  r_equator=None, r_pole=None):
         if (r_equator is not None) | (r_pole is not None):
             rf = semiaxes_to_invflattening(r_equator, r_pole)
-            print("Defining alt ellipse for Geographic with rf", rf)
+            # print("Defining alt ellipse for Geographic with rf", rf)
             self.ERSlla = proj4.Proj(proj='latlong', #datum=datum,
                                      a=r_equator, rf=rf)
             self.ERSxyz = proj4.Proj(proj='geocent', #datum=datum,
@@ -97,3 +99,30 @@ def get_GOESR_coordsys_alt_ellps(sat_lon_nadir=-75.0):
     grs80lla = GeographicSystemAltEllps(r_equator=ltg_ellps_re, r_pole=ltg_ellps_rp,
                                 datum='WGS84')
     return geofixcs, grs80lla
+
+def get_glm_parallax_offsets(lon, lat, goes_ds):
+    # Get parallax of glm files to goes projection
+    x, y = get_abi_x_y(lat, lon, goes_ds)
+    z = np.zeros_like(x)
+
+    nadir = goes_ds.goes_imager_projection.longitude_of_projection_origin
+
+    _, grs80lla = get_GOESR_coordsys(nadir)
+    geofix_ltg, lla_ltg = get_GOESR_coordsys_alt_ellps(nadir)
+
+    lon_ltg,lat_ltg,alt_ltg=grs80lla.fromECEF(*geofix_ltg.toECEF(x,y,z))
+
+    return lon_ltg-lon, lat_ltg-lat
+
+def get_corrected_glm_x_y(glm_filename):
+    with xr.open_dataset(glm_filename) as glm_ds:
+        lon_offset, lat_offset = get_glm_parallax_offsets(glm_ds.flash_lon.data, glm_ds.flash_lat.data, goes_ds)
+        glm_lon = glm_ds.flash_lon.data + lon_offset
+        glm_lat = glm_ds.flash_lat.data + lat_offset
+    return get_abi_x_y(glm_lat, glm_lon, goes_ds)
+
+def get_glm_hist(glm_files, goes_ds, start_time, end_time):
+    x_bins, y_bins = get_ds_bin_edges(goes_ds, ('x','y'))
+    glm_x, glm_y = (np.concatenate(locs) for locs in zip(*[get_corrected_glm_x_y(glm_files[i]) for i in glm_files
+          if i > start_time and i < end_time]))
+    return np.histogram2d(glm_y, glm_x, bins=(y_bins[::-1], x_bins))[0][::-1]
