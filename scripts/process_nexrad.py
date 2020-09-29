@@ -12,11 +12,19 @@ import pyart
 
 # code from https://stackoverflow.com/questions/279237/import-a-module-from-a-relative-path?lq=1#comment15918105_6098238 to load a realitive folde from a notebook
 # realpath() will make your script run, even if you symlink it :)
-cmd_folder = os.path.realpath(os.path.abspath(os.path.split(inspect.getfile( inspect.currentframe() ))[0]))
+cmd_folder = os.path.dirname(os.path.realpath(os.path.abspath(os.path.split(inspect.getfile( inspect.currentframe() ))[0])))
 if cmd_folder not in sys.path:
     sys.path.insert(0, cmd_folder)
 
 from utils import io, abi, glm, nexrad
+
+goes_data_path = '/gws/nopw/j04/eo_shared_data_vol2/scratch/satellite/GOES16'
+if not os.path.isdir(goes_data_path):
+    os.makedirs(goes_data_path)
+
+nexrad_data_path = '/gws/nopw/j04/eo_shared_data_vol2/scratch/radar/nexrad_l2'
+if not os.path.isdir(nexrad_data_path):
+    os.makedirs(nexrad_data_path)
 
 date = datetime(2018,6,19,16)
 abi_files = sorted(io.find_abi_files(date, satellite=16, product='MCMIP', view='C', mode=3,
