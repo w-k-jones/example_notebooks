@@ -114,7 +114,7 @@ def get_glm_parallax_offsets(lon, lat, goes_ds):
 
     return lon_ltg-lon, lat_ltg-lat
 
-def get_corrected_glm_x_y(glm_filename):
+def get_corrected_glm_x_y(glm_filename, goes_ds):
     with xr.open_dataset(glm_filename) as glm_ds:
         lon_offset, lat_offset = get_glm_parallax_offsets(glm_ds.flash_lon.data, glm_ds.flash_lat.data, goes_ds)
         glm_lon = glm_ds.flash_lon.data + lon_offset
@@ -123,6 +123,6 @@ def get_corrected_glm_x_y(glm_filename):
 
 def get_glm_hist(glm_files, goes_ds, start_time, end_time):
     x_bins, y_bins = get_ds_bin_edges(goes_ds, ('x','y'))
-    glm_x, glm_y = (np.concatenate(locs) for locs in zip(*[get_corrected_glm_x_y(glm_files[i]) for i in glm_files
-          if i > start_time and i < end_time]))
+    glm_x, glm_y = (np.concatenate(locs) for locs in zip(*[get_corrected_glm_x_y(glm_files[i], goes_ds)
+                                                           for i in glm_files if i > start_time and i < end_time]))
     return np.histogram2d(glm_y, glm_x, bins=(y_bins[::-1], x_bins))[0][::-1]
