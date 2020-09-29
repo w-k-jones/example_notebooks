@@ -22,7 +22,7 @@ parser.add_argument('-sd', help='Directory to save preprocess files',
                     default='./data/regrid', type=str)
 
 args = parser.parse_args()
-date = parse_date(args.date)
+date = parse_date(args.date, fuzzy=True)
 x0 = int(args.x0)
 x1 = int(args.x1)
 y0 = int(args.y0)
