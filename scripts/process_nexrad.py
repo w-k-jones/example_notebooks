@@ -21,9 +21,7 @@ parser.add_argument('-sd', help='Directory to save preprocess files',
                     default='./data/regrid', type=str)
 
 args = parser.parse_args()
-satellite = str(args.satellite)
-start_date = parse_date(args.start_date)
-l = int(args.l)
+date = parse_date(args.start_date)
 x0 = int(args.x0)
 x1 = int(args.x1)
 y0 = int(args.y0)
