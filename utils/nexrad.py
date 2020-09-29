@@ -54,7 +54,7 @@ def map_nexrad_to_goes(nexrad_lat, nexrad_lon, nexrad_alt, goes_ds):
 
     return rad_x, rad_y
 
-def get_nexrad_hist(nexrad_ref, nexrad_time, nexrad_alt, nexrad_lat, nexrad_lon,
+def get_nexrad_hist(nexrad_time, nexrad_alt, nexrad_lat, nexrad_lon, nexrad_ref, 
                     goes_ds, start_time, end_time, min_alt=2500, max_alt=15000):
 
     wh_t = np.logical_and(nexrad_time>=start_time, nexrad_time<end_time)
