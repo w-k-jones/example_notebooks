@@ -27,7 +27,7 @@ def get_gates_from_tar(nexrad_archive):
                 alt_list.append(radar.gate_altitude['data'])
                 lat_list.append(radar.gate_latitude['data'])
                 lon_list.append(radar.gate_longitude['data'])
-                ref_list.append(radar.fields['reflectivity']['data'])
+                ref_list.append(radar.fields['reflectivity']['data'].data)
 
                 start_time = parse_date(item[4:19], fuzzy=True)
                 time_list.append([start_time+timedelta(seconds=t) for t in radar.time['data']])
@@ -54,7 +54,7 @@ def map_nexrad_to_goes(nexrad_lat, nexrad_lon, nexrad_alt, goes_ds):
 
     return rad_x, rad_y
 
-def get_nexrad_hist(nexrad_time, nexrad_alt, nexrad_lat, nexrad_lon, nexrad_ref, 
+def get_nexrad_hist(nexrad_time, nexrad_alt, nexrad_lat, nexrad_lon, nexrad_ref,
                     goes_ds, start_time, end_time, min_alt=2500, max_alt=15000):
 
     wh_t = np.logical_and(nexrad_time>=start_time, nexrad_time<end_time)
@@ -62,14 +62,18 @@ def get_nexrad_hist(nexrad_time, nexrad_alt, nexrad_lat, nexrad_lon, nexrad_ref,
     x,y = map_nexrad_to_goes(nexrad_lat[wh_t][mask], nexrad_lon[wh_t][mask],
                                     nexrad_alt[wh_t][mask], goes_ds)
 
+    ref_mask = np.isfinite(nexrad_ref[wh_t][mask])
+
     x_bins, y_bins = get_ds_bin_edges(goes_ds, ('x','y'))
-    counts_hist = np.histogram2d(y, x, bins=(y_bins[::-1], x_bins))[0][::-1]
-    ref_hist = stats.binned_statistic_dd((y, x), nexrad_ref[wh_t][mask],
+    counts_raw = np.histogram2d(y, x, bins=(y_bins[::-1], x_bins))[0][::-1]
+    counts_masked = np.histogram2d(y[ref_mask], x[ref_mask], bins=(y_bins[::-1], x_bins))[0][::-1]
+    ref_hist = stats.binned_statistic_dd((y[ref_mask], x[ref_mask]),
+                                         nexrad_ref[wh_t][mask][ref_mask],
                                          statistic='mean',
                                          bins=(y_bins[::-1], x_bins),
                                          expand_binnumbers=True)[0][::-1]
 
-    return counts_hist, ref_hist
+    return counts_raw, counts_masked, ref_hist
 
 def get_site_grids(nexrad_file, goes_ds, goes_dates):
     radar_gates = get_gates_from_tar(nexrad_file)

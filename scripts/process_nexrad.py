@@ -58,9 +58,9 @@ nexrad_sites = ['KTBW','KMLB','KAMX','KJAX','KVAX','KCLX','KTLH','KJGX','KEOX']
 nexrad_files = sum([io.find_nexrad_files(date, site, save_dir=nexrad_data_path, download_missing=True)
                     for site in nexrad_sites], [])
 
-stack_count, stack_mean = [np.stack(temp) for temp in zip(*[nexrad.get_site_grids(nf, goes_ds, abi_dates)
+raw_count, stack_count, stack_mean = [np.stack(temp) for temp in zip(*[nexrad.get_site_grids(nf, goes_ds, abi_dates)
                                                             for nf in nexrad_files])]
 
 ref_grid = xr.DataArray(np.nansum(stack_count*stack_mean, 0)/np.nansum(stack_count, 0),
                         goes_ds.CMI_C13.coords, goes_ds.CMI_C13.dims)
-ref_mask = xr.DataArray(np.nansum(stack_count, 0)>0, goes_ds.CMI_C13.coords, goes_ds.CMI_C13.dims)
+ref_mask = xr.DataArray(np.nansum(raw_count, 0)>0, goes_ds.CMI_C13.coords, goes_ds.CMI_C13.dims)
