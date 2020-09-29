@@ -67,11 +67,14 @@ def get_nexrad_hist(nexrad_time, nexrad_alt, nexrad_lat, nexrad_lon, nexrad_ref,
     x_bins, y_bins = get_ds_bin_edges(goes_ds, ('x','y'))
     counts_raw = np.histogram2d(y, x, bins=(y_bins[::-1], x_bins))[0][::-1]
     counts_masked = np.histogram2d(y[ref_mask], x[ref_mask], bins=(y_bins[::-1], x_bins))[0][::-1]
-    ref_hist = stats.binned_statistic_dd((y[ref_mask], x[ref_mask]),
-                                         nexrad_ref[wh_t][mask][ref_mask],
-                                         statistic='mean',
-                                         bins=(y_bins[::-1], x_bins),
-                                         expand_binnumbers=True)[0][::-1]
+    if np.any(ref_mask):
+        ref_hist = stats.binned_statistic_dd((y[ref_mask], x[ref_mask]),
+                                             nexrad_ref[wh_t][mask][ref_mask],
+                                             statistic='mean',
+                                             bins=(y_bins[::-1], x_bins),
+                                             expand_binnumbers=True)[0][::-1]
+    else:
+        ref_hist = np.zeros(counts_masked.shape)
 
     return counts_raw, counts_masked, ref_hist
 
