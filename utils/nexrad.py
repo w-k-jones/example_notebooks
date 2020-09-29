@@ -68,3 +68,8 @@ def get_nexrad_hist(nexrad_ref, nexrad_time, nexrad_alt, nexrad_lat, nexrad_lon,
                                          expand_binnumbers=True)[0][::-1]
 
     return counts_hist, ref_hist
+
+def get_site_grids(nexrad_file, goes_ds, goes_dates):
+    radar_gates = get_gates_from_tar(nexrad_file)
+    temp_stack = [get_nexrad_hist(*radar_gates_3, goes_ds, dt, dt+timedelta(minutes=5)) for dt in goes_dates]
+    return [np.stack(temp) for temp in zip(*temp_stack)]
