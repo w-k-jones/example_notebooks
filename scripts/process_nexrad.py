@@ -1,3 +1,4 @@
+#!/home/users/wkjones/miniconda2/envs/flow_dev/bin/python3
 import os
 import sys
 import inspect
@@ -13,6 +14,7 @@ import pyart
 # code from https://stackoverflow.com/questions/279237/import-a-module-from-a-relative-path?lq=1#comment15918105_6098238 to load a realitive folde from a notebook
 # realpath() will make your script run, even if you symlink it :)
 cmd_folder = os.path.dirname(os.path.realpath(os.path.abspath(os.path.split(inspect.getfile( inspect.currentframe() ))[0])))
+cmd_folder = '/home/users/wkjones/python/jupyter_notebooks/example_notebooks'
 if cmd_folder not in sys.path:
     sys.path.insert(0, cmd_folder)
 
