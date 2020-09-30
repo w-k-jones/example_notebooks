@@ -94,7 +94,7 @@ def get_nexrad_site_latlons():
     return zip(*nexrad_latlons)
 
 def filter_nexrad_sites(goes_ds, extend=0.005):
-    site_pairs = dict(zip(get_nexrad_sitenames(), zip(*abi.get_abi_x_y(nexrad_lats, nexrad_lons, goes_ds))))
+    site_pairs = dict(zip(get_nexrad_sitenames(), zip(*get_abi_x_y(nexrad_lats, nexrad_lons, goes_ds))))
     x0 = goes_ds.x[0]-extend
     x1 = goes_ds.x[-1]+extend
     y0 = goes_ds.y[-1]-extend
