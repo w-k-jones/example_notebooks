@@ -83,20 +83,38 @@ for i, t in enumerate(glm_grid.t):
     glm_grid[i] = glm.get_glm_hist(glm_files, goes_ds, abi_dates[i], abi_dates[i]+timedelta(minutes=5))
 
 print('Finding NEXRAD data')
-# Pull out specific sites over Florida. There are a lot more sites covering the entire US (all site codes starting with 'K')
-# nexrad_sites = ['KTBW','KMLB','KAMX','KJAX','KVAX','KCLX','KTLH','KJGX','KEOX']
-nexrad_sites = ['TJUA','KCBW','KGYX','KCXX','KBOX','KENX','KBGM','KBUF','KTYX','KOKX','KDOX','KDIX','KPBZ','KCCX','KRLX','KAKQ','KFCX','KLWX','KMHX','KRAX','KLTX','KCLX','KCAE','KGSP','KFFC','KVAX','KJGX','KEVX','KJAX','KBYX','KMLB','KAMX','KTLH','KTBW','KBMX','KEOX','KHTX','KMXX','KMOB','KDGX','KGWX','KMRX','KNQA','KOHX','KHPX','KJKL','KLVX','KPAH','KILN','KCLE','KDTX','KAPX','KGRR','KMQT','KVWX','KIND','KIWX','KLOT','KILX','KGRB','KARX','KMKX','KDLH','KMPX','KDVN','KDMX','KEAX','KSGF','KLSX','KSRX','KLZK','KPOE','KLCH','KLIX','KSHV','KAMA','KEWX','KBRO','KCRP','KFWS','KDYX','KEPZ','KGRK','KHGX','KDFX','KLBB','KMAF','KSJT','KFDR','KTLX','KINX','KVNX','KDDC','KGLD','KTWX','KICT','KUEX','KLNX','KOAX','KABR','KUDX','KFSD','KBIS','KMVX','KMBX','KBLX','KGGW','KTFX','KMSX','KCYS','KRIW','KFTG','KGJX','KPUX','KABX','KFDX','KHDX','KFSX','KIWA','KEMX','KYUX','KICX','KMTX','KCBX','KSFX','KLRX','KESX','KRGX','KBBX','KEYX','KBHX','KVTX','KDAX','KNKX','KMUX','KHNX','KSOX','KVBX','PHKI','PHKM','PHMO','PHWA','KMAX','KPDT','KRTX','KLGX','KATX','KOTX']
+nexrad_sites = nexrad.filter_nexrad_sites(goes_ds)
+print("Number of sites in bound: %d" % len(nexrad_sites))
 
 nexrad_files = sum([io.find_nexrad_files(date, site, save_dir=nexrad_data_path, download_missing=True)
                     for site in nexrad_sites], [])
 
 print('Processing NEXRAD data')
-raw_count, stack_count, stack_mean = [np.stack(temp) for temp in zip(*[nexrad.get_site_grids(nf, goes_ds, abi_dates)
-                                                            for nf in nexrad_files])]
+# raw_count, stack_count, stack_mean = [np.stack(temp) for temp in zip(*[nexrad.get_site_grids(nf, goes_ds, abi_dates)
+#                                                             for nf in nexrad_files])]
+#
+# ref_grid = xr.DataArray(np.nansum(stack_count*stack_mean, 0)/np.nansum(stack_count, 0),
+#                         goes_ds.CMI_C13.coords, goes_ds.CMI_C13.dims)
+# ref_mask = xr.DataArray(np.nansum(raw_count, 0)>0, goes_ds.CMI_C13.coords, goes_ds.CMI_C13.dims)
 
-ref_grid = xr.DataArray(np.nansum(stack_count*stack_mean, 0)/np.nansum(stack_count, 0),
-                        goes_ds.CMI_C13.coords, goes_ds.CMI_C13.dims)
-ref_mask = xr.DataArray(np.nansum(raw_count, 0)>0, goes_ds.CMI_C13.coords, goes_ds.CMI_C13.dims)
+ref_total = np.zeros(goes_ds.shape)
+ref_counts_raw = np.zeros(goes_ds.shape)
+ref_counts_masked = np.zeros(goes_ds.shape)
+
+for nf in nexrad_files:
+    print(nf)
+    raw_count, stack_count, stack_mean = zip(*[nexrad.get_site_grids(nf, goes_ds, abi_dates)
+    wh = np.isfinite(stack_mean*stack_count)
+    ref_total[wh] += stack_mean[wh]*stack_count[wh]
+    ref_counds_raw += raw_count
+    ref_counts_masked += stack_count
+
+ref_grid = ref_total/ref_counds_masked
+ref_mask = ref_counds_raw == 0
+ref_grid[ref_mask] = np.nan
+
+ref_grid = xr.DataArray(ref_grid, goes_ds.CMI_C13.coords, goes_ds.CMI_C13.dims)
+ref_mask = xr.DataArray(ref_mask, goes_ds.CMI_C13.coords, goes_ds.CMI_C13.dims)
 
 print ('Saving to %s' % (save_path))
 dataset = xr.Dataset({'glm_freq':glm_grid, 'radar_ref':ref_grid, 'radar_mask':ref_mask})
