@@ -95,9 +95,9 @@ print('Processing NEXRAD data')
 #                         goes_ds.CMI_C13.coords, goes_ds.CMI_C13.dims)
 # ref_mask = xr.DataArray(np.nansum(raw_count, 0)>0, goes_ds.CMI_C13.coords, goes_ds.CMI_C13.dims)
 
-ref_total = np.zeros(goes_ds.shape)
-ref_counts_raw = np.zeros(goes_ds.shape)
-ref_counts_masked = np.zeros(goes_ds.shape)
+ref_total = np.zeros(goes_ds.CMI_C13.shape)
+ref_counts_raw = np.zeros(goes_ds.CMI_C13.shape)
+ref_counts_masked = np.zeros(goes_ds.CMI_C13.shape)
 
 for nf in nexrad_files:
     print(nf)
