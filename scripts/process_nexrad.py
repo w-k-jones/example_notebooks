@@ -13,10 +13,10 @@ import pyart
 import argparse
 parser = argparse.ArgumentParser(description="""Regrid GLM and NEXRAD data to the GOES-16 projection""")
 parser.add_argument('date', help='Date of hour to process', type=str)
-parser.add_argument('-x0', help='Initial subset x location', default=1300, type=int)
-parser.add_argument('-x1', help='End subset x location', default=1550, type=int)
-parser.add_argument('-y0', help='Initial subset y location', default=650, type=int)
-parser.add_argument('-y1', help='End subset y location', default=900, type=int)
+parser.add_argument('-x0', help='Initial subset x location', default=0, type=int)
+parser.add_argument('-x1', help='End subset x location', default=2500, type=int)
+parser.add_argument('-y0', help='Initial subset y location', default=0, type=int)
+parser.add_argument('-y1', help='End subset y location', default=1500, type=int)
 parser.add_argument('-sd', help='Directory to save preprocess files',
                     default='./data/regrid', type=str)
 

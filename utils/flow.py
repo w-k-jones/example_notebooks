@@ -33,6 +33,20 @@ class Flow:
         self.flow_back[0] = -self.flow_for[0]
         self.flow_for[-1] = -self.flow_back[-1]
 
+    def _smooth_flow_step(self, step):
+        flow_for_warp = np.full_like(self.flow_for[step], np.nan)
+        flow_back_warp = np.full_like(self.flow_back[step+1], np.nan)
+
+        flow_for_warp[...,0] = -self._warp_flow_step(self.flow_back[step+1,...,0], step)
+        flow_for_warp[...,1] = -self._warp_flow_step(self.flow_back[step+1,...,1], step)
+        flow_back_warp[...,0] = -self._warp_flow_step(self.flow_for[step,...,0], step+1, direction='backward')
+        flow_back_warp[...,1] = -self._warp_flow_step(self.flow_for[step,...,1], step+1, direction='backward')
+
+        self.flow_for[step] = np.nanmean([self.flow_for[step],
+                                          flow_for_warp], 0)
+        self.flow_back[step+1] = np.nanmean([self.flow_back[step+1],
+                                             flow_back_warp], 0)
+
 def to_8bit(array, vmin=None, vmax=None):
     """
     Converts an array to an 8-bit range between 0 and 255 with dtype uint8
