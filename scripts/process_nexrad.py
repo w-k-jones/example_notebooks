@@ -103,7 +103,7 @@ ref_counts_masked = np.zeros(goes_ds.shape)
 
 for nf in nexrad_files:
     print(nf)
-    raw_count, stack_count, stack_mean = zip(*[nexrad.get_site_grids(nf, goes_ds, abi_dates)
+    raw_count, stack_count, stack_mean = nexrad.get_site_grids(nf, goes_ds, abi_dates)
     wh = np.isfinite(stack_mean*stack_count)
     ref_total[wh] += stack_mean[wh]*stack_count[wh]
     ref_counds_raw += raw_count
