@@ -84,7 +84,9 @@ for i, t in enumerate(glm_grid.t):
 
 print('Finding NEXRAD data')
 # Pull out specific sites over Florida. There are a lot more sites covering the entire US (all site codes starting with 'K')
-nexrad_sites = ['KTBW','KMLB','KAMX','KJAX','KVAX','KCLX','KTLH','KJGX','KEOX']
+# nexrad_sites = ['KTBW','KMLB','KAMX','KJAX','KVAX','KCLX','KTLH','KJGX','KEOX']
+nexrad_sites = ['TJUA','KCBW','KGYX','KCXX','KBOX','KENX','KBGM','KBUF','KTYX','KOKX','KDOX','KDIX','KPBZ','KCCX','KRLX','KAKQ','KFCX','KLWX','KMHX','KRAX','KLTX','KCLX','KCAE','KGSP','KFFC','KVAX','KJGX','KEVX','KJAX','KBYX','KMLB','KAMX','KTLH','KTBW','KBMX','KEOX','KHTX','KMXX','KMOB','KDGX','KGWX','KMRX','KNQA','KOHX','KHPX','KJKL','KLVX','KPAH','KILN','KCLE','KDTX','KAPX','KGRR','KMQT','KVWX','KIND','KIWX','KLOT','KILX','KGRB','KARX','KMKX','KDLH','KMPX','KDVN','KDMX','KEAX','KSGF','KLSX','KSRX','KLZK','KPOE','KLCH','KLIX','KSHV','KAMA','KEWX','KBRO','KCRP','KFWS','KDYX','KEPZ','KGRK','KHGX','KDFX','KLBB','KMAF','KSJT','KFDR','KTLX','KINX','KVNX','KDDC','KGLD','KTWX','KICT','KUEX','KLNX','KOAX','KABR','KUDX','KFSD','KBIS','KMVX','KMBX','KBLX','KGGW','KTFX','KMSX','KCYS','KRIW','KFTG','KGJX','KPUX','KABX','KFDX','KHDX','KFSX','KIWA','KEMX','KYUX','KICX','KMTX','KCBX','KSFX','KLRX','KESX','KRGX','KBBX','KEYX','KBHX','KVTX','KDAX','KNKX','KMUX','KHNX','KSOX','KVBX','PHKI','PHKM','PHMO','PHWA','KMAX','KPDT','KRTX','KLGX','KATX','KOTX']
+
 nexrad_files = sum([io.find_nexrad_files(date, site, save_dir=nexrad_data_path, download_missing=True)
                     for site in nexrad_sites], [])
 
