@@ -107,7 +107,7 @@ for nf in nexrad_files:
     ref_counts_raw += raw_count
     ref_counts_masked += stack_count
 
-ref_grid = ref_total/ref_counds_masked
+ref_grid = ref_total/ref_counts_masked
 ref_mask = ref_counds_raw == 0
 ref_grid[ref_mask] = np.nan
 
