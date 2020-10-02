@@ -62,15 +62,24 @@ abi_files = sorted(io.find_abi_files(date, satellite=16, product='MCMIP', view='
 abi_files = {io.get_goes_date(i):i for i in abi_files}
 abi_dates = list(abi_files.keys())
 
-# Load a stack of goes datasets using xarray. Select a region over Northern Florida. (full file size in 1500x2500 pixels)
-goes_ds = xr.open_mfdataset(abi_files.values(), concat_dim='t', combine='nested').isel({'x':slice(x0,x1), 'y':slice(y0,y1)})
+goes_ds = xr.open_mfdataset(abi_files.values(), concat_dim='t',
+                            combine='nested').isel({'x':slice(x0,x1), 'y':slice(y0,y1)})
 
 # Now let's find the corresponding GLM files
 print('Finding GLM data')
-glm_files = sorted(io.find_glm_files(date, satellite=16,
+# Try twice just in case
+for i in range(2):
+    try:
+        glm_files = sorted(io.find_glm_files(date, satellite=16,
                                         save_dir=goes_data_path,
                                         replicate_path=True, check_download=True,
                                         n_attempts=1, download_missing=True))
+    except Exception as e: # Yes this is bad but google cloud storage can throw some wierd exceptions
+        err = e
+    else:
+        break
+else:
+    raise(e)
 
 glm_files = {io.get_goes_date(i):i for i in glm_files}
 glm_dates = list(glm_files.keys())
@@ -80,14 +89,29 @@ glm_grid = xr.DataArray(np.zeros(goes_ds.CMI_C13.shape), goes_ds.CMI_C13.coords,
 
 print('Processing GLM data')
 for i, t in enumerate(glm_grid.t):
-    glm_grid[i] = glm.get_glm_hist(glm_files, goes_ds, abi_dates[i], abi_dates[i]+timedelta(minutes=5))
+    try:
+        glm_grid[i] = glm.get_glm_hist(glm_files, goes_ds,
+                                       abi_dates[i]-timedelta(minutes=2.5),
+                                       abi_dates[i]+timedelta(minutes=2.5))
+    except ValueError, IndexError as e:
+        print('Error processing glm data at step %d' % i)
+        print(e)
 
 print('Finding NEXRAD data')
 nexrad_sites = nexrad.filter_nexrad_sites(goes_ds)
 print("Number of sites in bound: %d" % len(nexrad_sites))
 
-nexrad_files = sum([io.find_nexrad_files(date, site, save_dir=nexrad_data_path, download_missing=True)
+# 2 attempts to load just in case
+for i in range(2):
+    try:
+        nexrad_files = sum([io.find_nexrad_files(date, site, save_dir=nexrad_data_path, download_missing=True)
                     for site in nexrad_sites], [])
+    except Exception as e:
+        err = e
+    else:
+        break
+else:
+    raise(e)
 
 print('Processing NEXRAD data')
 # raw_count, stack_count, stack_mean = [np.stack(temp) for temp in zip(*[nexrad.get_site_grids(nf, goes_ds, abi_dates)
@@ -103,7 +127,11 @@ ref_counts_masked = np.zeros(goes_ds.CMI_C13.shape)
 
 for nf in nexrad_files:
     print(datetime.now(), nf)
-    raw_count, stack_count, stack_mean = nexrad.get_site_grids(nf, goes_ds, abi_dates)
+    try:
+        raw_count, stack_count, stack_mean = nexrad.get_site_grids(nf, goes_ds, abi_dates)
+    except ValueError, IndexError as e:
+        print('Error processing nexrad data')
+        print(e)
     wh = np.isfinite(stack_mean*stack_count)
     ref_total[wh] += stack_mean[wh]*stack_count[wh]
     ref_counts_raw += raw_count
@@ -117,7 +145,9 @@ ref_grid = xr.DataArray(ref_grid, goes_ds.CMI_C13.coords, goes_ds.CMI_C13.dims)
 ref_mask = xr.DataArray(ref_mask, goes_ds.CMI_C13.coords, goes_ds.CMI_C13.dims)
 
 print ('Saving to %s' % (save_path))
-dataset = xr.Dataset({'glm_freq':(('t','y','x'),glm_grid.data), 'radar_ref':(('t','y','x'),ref_grid.data), 'radar_mask':(('t','y','x'),ref_mask.data)},
+dataset = xr.Dataset({'glm_freq':(('t','y','x'),glm_grid.data),
+                      'radar_ref':(('t','y','x'),ref_grid.data),
+                      'radar_mask':(('t','y','x'),ref_mask.data)},
                      goes_ds.CMI_C13.coords)
 
 dataset.to_netcdf(save_path)
