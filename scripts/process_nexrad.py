@@ -60,8 +60,8 @@ abi_files = sorted(io.find_abi_files(date, satellite=16, product='MCMIP', view='
 abi_files = {io.get_goes_date(i):i for i in abi_files}
 abi_dates = list(abi_files.keys())
 
-# Load a stack of goes datasets using xarray. Select a region over Northern Florida. (full file size in 1500x2500 pixels)
-goes_ds = xr.open_mfdataset(abi_files.values(), concat_dim='t', combine='nested').isel({'x':slice(x0,x1), 'y':slice(y0,y1)})
+goes_ds = xr.open_mfdataset(abi_files.values(), concat_dim='t',
+                            combine='nested').isel({'x':slice(x0,x1), 'y':slice(y0,y1)})
 
 # Now let's find the corresponding GLM files
 print('Finding GLM data')
@@ -89,8 +89,8 @@ print('Processing GLM data')
 for i, t in enumerate(glm_grid.t):
     try:
         glm_grid[i] = glm.get_glm_hist(glm_files, goes_ds,
-                                   abi_dates[i]-timedelta(minutes=2.5),
-                                   abi_dates[i]+timedelta(minutes=2.5))
+                                       abi_dates[i]-timedelta(minutes=2.5),
+                                       abi_dates[i]+timedelta(minutes=2.5))
     except ValueError, IndexError as e:
         print('Error processing glm data at step %d' % i)
         print(e)
