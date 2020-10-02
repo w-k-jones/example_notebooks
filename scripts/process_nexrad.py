@@ -19,7 +19,7 @@ parser.add_argument('-x1', help='End subset x location', default=2500, type=int)
 parser.add_argument('-y0', help='Initial subset y location', default=0, type=int)
 parser.add_argument('-y1', help='End subset y location', default=1500, type=int)
 parser.add_argument('-sd', help='Directory to save preprocess files',
-                    default='./data/regrid', type=str)
+                    default='/gws/nopw/j04/eo_shared_data_vol2/scratch/satellite/GOES16/regrid', type=str)
 
 args = parser.parse_args()
 date = parse_date(args.date, fuzzy=True)
@@ -110,14 +110,15 @@ for nf in nexrad_files:
     ref_counts_masked += stack_count
 
 ref_grid = ref_total/ref_counts_masked
-ref_mask = ref_counds_raw == 0
+ref_mask = ref_counts_raw == 0
 ref_grid[ref_mask] = np.nan
 
 ref_grid = xr.DataArray(ref_grid, goes_ds.CMI_C13.coords, goes_ds.CMI_C13.dims)
 ref_mask = xr.DataArray(ref_mask, goes_ds.CMI_C13.coords, goes_ds.CMI_C13.dims)
 
 print ('Saving to %s' % (save_path))
-dataset = xr.Dataset({'glm_freq':glm_grid, 'radar_ref':ref_grid, 'radar_mask':ref_mask})
+dataset = xr.Dataset({'glm_freq':(('t','y','x'),glm_grid.data), 'radar_ref':(('t','y','x'),ref_grid.data), 'radar_mask':(('t','y','x'),ref_mask.data)},
+                     goes_ds.CMI_C13.coords)
 
 dataset.to_netcdf(save_path)
 print('Finished successfully')
