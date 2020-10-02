@@ -91,7 +91,7 @@ for i, t in enumerate(glm_grid.t):
         glm_grid[i] = glm.get_glm_hist(glm_files, goes_ds,
                                        abi_dates[i]-timedelta(minutes=2.5),
                                        abi_dates[i]+timedelta(minutes=2.5))
-    except ValueError, IndexError as e:
+    except (ValueError, IndexError) as e:
         print('Error processing glm data at step %d' % i)
         print(e)
 
@@ -127,7 +127,7 @@ for nf in nexrad_files:
     print(datetime.now(), nf)
     try:
         raw_count, stack_count, stack_mean = nexrad.get_site_grids(nf, goes_ds, abi_dates)
-    except ValueError, IndexError as e:
+    except (ValueError, IndexError) as e:
         print('Error processing nexrad data')
         print(e)
     wh = np.isfinite(stack_mean*stack_count)
