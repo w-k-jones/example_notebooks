@@ -32,7 +32,7 @@ if not os.path.isdir(save_dir):
 
 save_name = 'regrid_%s.nc' % (date.strftime('%Y%m%d_%H0000'))
 
-save_path = os.path.join(save_dir, save_name)
+save_path = os.path.join(save_dir, date.strftime('%Y/%m/%d'), save_name)
 
 # code from https://stackoverflow.com/questions/279237/import-a-module-from-a-relative-path?lq=1#comment15918105_6098238 to load a realitive folde from a notebook
 # realpath() will make your script run, even if you symlink it :)
