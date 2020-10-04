@@ -19,6 +19,8 @@ parser.add_argument('-y0', help='Initial subset y location', default=0, type=int
 parser.add_argument('-y1', help='End subset y location', default=1500, type=int)
 parser.add_argument('-sd', help='Directory to save preprocess files',
                     default='./data/regrid', type=str)
+parser.add_argument('--extend_path', help='Extend save directory using year/month/day subdirectories',
+                    default=True, type=bool)
 
 args = parser.parse_args()
 date = parse_date(args.date, fuzzy=True)
@@ -27,12 +29,14 @@ x1 = int(args.x1)
 y0 = int(args.y0)
 y1 = int(args.y1)
 save_dir = args.sd
+if args.extend_path:
+    save_dir = os.path.join(save_dir, date.strftime('%Y/%m/%d'))
 if not os.path.isdir(save_dir):
     os.makedirs(save_dir)
 
 save_name = 'regrid_%s.nc' % (date.strftime('%Y%m%d_%H0000'))
 
-save_path = os.path.join(save_dir, date.strftime('%Y/%m/%d'), save_name)
+save_path = os.path.join(save_dir, save_name)
 
 # code from https://stackoverflow.com/questions/279237/import-a-module-from-a-relative-path?lq=1#comment15918105_6098238 to load a realitive folde from a notebook
 # realpath() will make your script run, even if you symlink it :)
