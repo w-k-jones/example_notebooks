@@ -19,7 +19,7 @@ parser.add_argument('-x1', help='End subset x location', default=2500, type=int)
 parser.add_argument('-y0', help='Initial subset y location', default=0, type=int)
 parser.add_argument('-y1', help='End subset y location', default=1500, type=int)
 parser.add_argument('-sd', help='Directory to save preprocess files',
-                    default='/gws/nopw/j04/eo_shared_data_vol2/scratch/satellite/GOES16/regrid', type=str))
+                    default='/gws/nopw/j04/eo_shared_data_vol2/scratch/satellite/GOES16/regrid', type=str)
 parser.add_argument('--extend_path', help='Extend save directory using year/month/day subdirectories',
                     default=True, type=bool)
 
