@@ -33,7 +33,10 @@ save_dir = args.sd
 if args.extend_path:
     save_dir = os.path.join(save_dir, date.strftime('%Y/%m/%d'))
 if not os.path.isdir(save_dir):
-    os.makedirs(save_dir)
+    try:
+        os.makedirs(save_dir)
+    except FileExistsError:
+        pass
 
 save_name = 'regrid_%s.nc' % (date.strftime('%Y%m%d_%H0000'))
 
