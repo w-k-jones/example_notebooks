@@ -94,11 +94,17 @@ flow_kwargs = {'pyr_scale':0.5, 'levels':6, 'winsize':32, 'iterations':4,
                'poly_n':5, 'poly_sigma':1., 'flags':cv.OPTFLOW_FARNEBACK_GAUSSIAN}
 flow = Flow(bt, flow_kwargs=flow_kwargs, smoothing_passes=3)
 
-print('Calculating edges')
-edges = flow.sobel(np.maximum(np.minimum(wvd,-5),-15), direction='uphill')
-
 print('Calculating WVD growth')
 wvd_diff = flow.convolve(flow.diff(wvd)/dt[:,np.newaxis,np.newaxis], func=lambda x:np.nanmean(x,0))
+
+print('Calculating edges')
+# edges = flow.sobel(np.maximum(np.minimum(wvd,-5),-15), direction='uphill')
+
+inner_field = wvd-swd+wvd_diff*5
+inner_edges = flow.sobel(np.maximum(np.minimum(inner_field,-5),-15), direction='uphill')
+
+outer_field = wvd+swd
+outer_edges = flow.sobel(np.maximum(np.minimum(outer_field,-2.5),-7.5), direction='uphill')
 
 print('Calculating markers')
 markers = wvd_diff>=0.5
@@ -109,12 +115,31 @@ mask = ndi.binary_erosion((wvd<=-15).data.compute())
 print('Watershedding')
 l_flow = lf.Flow_Func(flow.flow_for[...,0], flow.flow_back[...,0],
                       flow.flow_for[...,1], flow.flow_back[...,1])
-watershed = lf.flow_network_watershed(edges, markers, l_flow, mask=mask,
-                                      structure=ndi.generate_binary_structure(3,1),
-                                      debug_mode=True)
+# watershed = lf.flow_network_watershed(edges, markers, l_flow, mask=mask,
+#                                       structure=ndi.generate_binary_structure(3,1),
+#                                       debug_mode=True)
+
+inner_watershed = lf.flow_network_watershed(inner_edges, markers, l_flow, mask=mask,
+                                            structure=ndi.generate_binary_structure(3,1),
+                                            debug_mode=True)
+
+outer_watershed = lf.flow_network_watershed(outer_edges, markers, l_flow, mask=mask,
+                                            structure=ndi.generate_binary_structure(3,1),
+                                            debug_mode=True)
+
+print('Labelling')
+# labels = lf.flow_label(watershed, l_flow, structure=ndi.generate_binary_structure(3,1))
+
+inner_labels = lf.flow_label(inner_watershed, l_flow, structure=ndi.generate_binary_structure(3,1))
+
+outer_labels = lf.flow_label(outer_watershed, l_flow, structure=ndi.generate_binary_structure(3,1))
 
 print ('Saving to %s' % (save_path))
-dataset = xr.Dataset({'watershed':(('t','y','x'), watershed),
+dataset = xr.Dataset({
+                      'inner_watershed':(('t','y','x'), watershed),
+                      'inner_labels':(('t','y','x'), labels),
+                      'outer_watershed':(('t','y','x'), watershed),
+                      'outer_labels':(('t','y','x'), labels),
                       'wvd_diff':(('t','y','x'), wvd_diff),
                       'x_flow_for':(('t','y','x'), flow.flow_for[...,0]),
                       'x_flow_back':(('t','y','x'), flow.flow_back[...,0]),
