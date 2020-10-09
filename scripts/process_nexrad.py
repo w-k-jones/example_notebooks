@@ -1,3 +1,4 @@
+#!/home/users/wkjones/miniconda2/envs/flow_dev/bin/python3
 import os
 import sys
 import inspect
@@ -18,7 +19,7 @@ parser.add_argument('-x1', help='End subset x location', default=2500, type=int)
 parser.add_argument('-y0', help='Initial subset y location', default=0, type=int)
 parser.add_argument('-y1', help='End subset y location', default=1500, type=int)
 parser.add_argument('-sd', help='Directory to save preprocess files',
-                    default='./data/regrid', type=str)
+                    default='/gws/nopw/j04/eo_shared_data_vol2/scratch/satellite/GOES16/regrid', type=str)
 parser.add_argument('--extend_path', help='Extend save directory using year/month/day subdirectories',
                     default=True, type=bool)
 
@@ -44,6 +45,7 @@ save_path = os.path.join(save_dir, save_name)
 # code from https://stackoverflow.com/questions/279237/import-a-module-from-a-relative-path?lq=1#comment15918105_6098238 to load a realitive folde from a notebook
 # realpath() will make your script run, even if you symlink it :)
 cmd_folder = os.path.dirname(os.path.realpath(os.path.abspath(os.path.split(inspect.getfile( inspect.currentframe() ))[0])))
+cmd_folder = '/home/users/wkjones/python/jupyter_notebooks/example_notebooks'
 if cmd_folder not in sys.path:
     sys.path.insert(0, cmd_folder)
 
@@ -154,5 +156,6 @@ dataset = xr.Dataset({'glm_freq':(('t','y','x'),glm_grid.data),
                       'radar_ref':(('t','y','x'),ref_grid.data),
                       'radar_mask':(('t','y','x'),ref_mask.data)},
                      goes_ds.CMI_C13.coords)
+
 dataset.to_netcdf(save_path)
 print('Finished successfully')
