@@ -2,11 +2,11 @@ import os
 import sys
 import inspect
 import itertools
-import tarfile
 
 import numpy as np
 import pandas as pd
 import xarray as xr
+from scipy import ndimage as ndi
 from datetime import datetime, timedelta
 from dateutil.parser import parse as parse_date
 
