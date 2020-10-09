@@ -6,6 +6,7 @@ import itertools
 import numpy as np
 import pandas as pd
 import xarray as xr
+import cv2 as cv
 from scipy import ndimage as ndi
 from datetime import datetime, timedelta
 from dateutil.parser import parse as parse_date
@@ -13,13 +14,15 @@ from dateutil.parser import parse as parse_date
 import argparse
 parser = argparse.ArgumentParser(description="""Regrid GLM and NEXRAD data to the GOES-16 projection""")
 parser.add_argument('date', help='Date of hour to process', type=str)
-parser.add_argument('days', help='Number of days to process', type=int)
+parser.add_argument('days', help='Number of days to process', type=float)
 parser.add_argument('-x0', help='Initial subset x location', default=0, type=int)
 parser.add_argument('-x1', help='End subset x location', default=2500, type=int)
 parser.add_argument('-y0', help='Initial subset y location', default=0, type=int)
 parser.add_argument('-y1', help='End subset y location', default=1500, type=int)
 parser.add_argument('-sd', help='Directory to save preprocess files',
                     default='./data/watershed', type=str)
+parser.add_argument('-gd', help='GOES directory',
+                    default='./data/GOES16', type=str)
 parser.add_argument('--extend_path', help='Extend save directory using year/month/day subdirectories',
                     default=True, type=bool)
 
@@ -54,7 +57,7 @@ from utils import io, abi
 from utils.flow import Flow
 from utils import legacy_flow as lf
 
-goes_data_path = '/gws/nopw/j04/eo_shared_data_vol2/scratch/satellite/GOES16'
+goes_data_path = args.gd
 if not os.path.isdir(goes_data_path):
     os.makedirs(goes_data_path)
 
@@ -66,6 +69,8 @@ abi_files = sorted(sum([io.find_abi_files(date, satellite=16, product='MCMIP', v
                                           replicate_path=True, check_download=True,
                                           n_attempts=1, download_missing=True)
                         for date in dates], []))
+
+print('%d files found'%len(abi_files))
 
 abi_files = {io.get_goes_date(i):i for i in abi_files}
 abi_dates = list(abi_files.keys())
