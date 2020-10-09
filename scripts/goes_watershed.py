@@ -9,7 +9,6 @@ import pandas as pd
 import xarray as xr
 from datetime import datetime, timedelta
 from dateutil.parser import parse as parse_date
-import pyart
 
 import argparse
 parser = argparse.ArgumentParser(description="""Regrid GLM and NEXRAD data to the GOES-16 projection""")
@@ -34,14 +33,14 @@ y0 = int(args.y0)
 y1 = int(args.y1)
 save_dir = args.sd
 if args.extend_path:
-    save_dir = os.path.join(save_dir, date.strftime('%Y/%m/%d'))
+    save_dir = os.path.join(save_dir, start_date.strftime('%Y/%m/%d'))
 if not os.path.isdir(save_dir):
     try:
         os.makedirs(save_dir)
     except FileExistsError:
         pass
 
-save_name = 'watershed_%s.nc' % (date.strftime('%Y%m%d_%H0000'))
+save_name = 'watershed_%s.nc' % (start_date.strftime('%Y%m%d_%H0000'))
 
 save_path = os.path.join(save_dir, save_name)
 
