@@ -538,3 +538,79 @@ def flow_network_watershed(field, markers, flow_func, mask=None, structure=None,
         if np.nanmax(fill)<=max_markers:
             break
     return fill
+
+def flow_label(data, flow, structure=ndi.generate_binary_structure(3,1)):
+    """
+    Labels separate regions in a Lagrangian aware manner using a pre-generated
+    flow field. Works in a similar manner to scipy.ndimage.label. By default
+    uses square connectivity
+    """
+#     Get labels for each time step
+    t_labels = ndi.label(data, structure=structure * np.array([0,1,0])[:,np.newaxis,np.newaxis])[0].astype(float)
+
+    bin_edges = np.cumsum(np.bincount(t_labels.astype(int).ravel()))
+    args = np.argsort(t_labels.ravel())
+
+    t_labels[t_labels==0] = np.nan
+    # Now get previous labels (lagrangian)
+    if np.any(structure * np.array([1,0,0])[:,np.newaxis,np.newaxis]):
+        p_labels = flow_convolve_nearest(t_labels, flow,
+                                         structure=structure * np.array([1,0,0])[:,np.newaxis,np.newaxis],
+                                         function=np.nanmin)
+    #     Map each label to its smallest overlapping label at the previous time step
+        p_label_map = {i:int(np.nanmin(p_labels.ravel()[args[bin_edges[i-1]:bin_edges[i]]])) \
+                   if bin_edges[i-1] < bin_edges[i] \
+                       and np.any(np.isfinite(p_labels.ravel()[args[bin_edges[i-1]:bin_edges[i]]])) \
+                   else i \
+                   for i in range(1, len(bin_edges)) \
+                   }
+    #     Converge to lowest value label
+        for k in p_label_map:
+            while p_label_map[k] != p_label_map[p_label_map[k]]:
+                p_label_map[k] = p_label_map[p_label_map[k]]
+    #     Check all labels have converged
+        for k in p_label_map:
+            assert p_label_map[k] == p_label_map[p_label_map[k]]
+    #     Relabel
+        for k in p_label_map:
+            if p_label_map[k] != k and bin_edges[k-1] < bin_edges[k]:
+                t_labels.ravel()[args[bin_edges[k-1]:bin_edges[k]]] = p_label_map[k]
+    # Now get labels for the next step
+    if np.any(structure * np.array([0,0,1])[:,np.newaxis,np.newaxis]):
+        n_labels = flow_convolve_nearest(t_labels, flow,
+                                         structure=structure * np.array([0,0,1])[:,np.newaxis,np.newaxis],
+                                         function=np.nanmin)
+    # Set matching labels to NaN to avoid repeating values
+        n_labels[n_labels==t_labels] = np.nan
+        # New bins
+        bins = np.bincount(np.fmax(t_labels.ravel(),0).astype(int))
+        bin_edges = np.cumsum(bins)
+        args = np.argsort(np.fmax(t_labels.ravel(),0).astype(int))
+    #     map each label to the smallest overlapping label at the next time step
+        n_label_map = {i:int(np.nanmin(n_labels.ravel()[args[bin_edges[i-1]:bin_edges[i]]])) \
+                   if bin_edges[i-1] < bin_edges[i] \
+                       and np.any(np.isfinite(n_labels.ravel()[args[bin_edges[i-1]:bin_edges[i]]])) \
+                   else i \
+                   for i in range(1, len(bin_edges)) \
+                   }
+    # converge
+        for k in sorted(list(n_label_map.keys()))[::-1]:
+            while n_label_map[k] != n_label_map[n_label_map[k]]:
+                n_label_map[k] = n_label_map[n_label_map[k]]
+    #     Check convergence
+        for k in n_label_map:
+            assert n_label_map[k] == n_label_map[n_label_map[k]]
+    #       Now relabel again
+        for k in n_label_map:
+            if n_label_map[k] != k and bin_edges[k-1] < bin_edges[k]:
+                t_labels.ravel()[args[bin_edges[k-1]:bin_edges[k]]] = n_label_map[k]
+# New bins
+    bins = np.bincount(np.fmax(t_labels.ravel(),0).astype(int))
+    bin_edges = np.cumsum(bins)
+    args = np.argsort(np.fmax(t_labels.ravel(),0).astype(int))
+#     relabel with consecutive integer values
+    for i, label in enumerate(np.unique(t_labels[np.isfinite(t_labels)]).astype(int)):
+        if bin_edges[label-1] < bin_edges[label]:
+            t_labels.ravel()[args[bin_edges[label-1]:bin_edges[label]]] = i+1
+    t_labels = np.fmax(t_labels,0).astype(int)
+    return t_labels
