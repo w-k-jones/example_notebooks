@@ -116,10 +116,10 @@ ref_mask = xr.DataArray(ref_mask, goes_ds.CMI_C13.coords, goes_ds.CMI_C13.dims)
 print ('Saving to %s' % (save_path))
 dataset = xr.Dataset({'watershed':(('t','y','x'), watershed),
                       'wvd_diff':(('t','y','x'), wvd_diff),
-                      'x_flow_for':(('t','y','x'), flow.flow_for[...,0],
-                      'x_flow_back':(('t','y','x'), flow.flow_back[...,0],
-                      'y_flow_for':(('t','y','x'), flow.flow_for[...,1],
-                      'y_flow_back':(('t','y','x'), flow.flow_back[...,1],
+                      'x_flow_for':(('t','y','x'), flow.flow_for[...,0]),
+                      'x_flow_back':(('t','y','x'), flow.flow_back[...,0]),
+                      'y_flow_for':(('t','y','x'), flow.flow_for[...,1]),
+                      'y_flow_back':(('t','y','x'), flow.flow_back[...,1]),
                       )},
                      goes_ds.CMI_C13.coords)
 dataset.to_netcdf(save_path)
