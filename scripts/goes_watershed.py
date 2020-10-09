@@ -97,7 +97,7 @@ flow = Flow(bt, flow_kwargs=flow_kwargs, smoothing_passes=3)
 print('Calculating edges')
 edges = flow.sobel(np.maximum(np.minimum(wvd,-5),-15), direction='uphill')
 
-print('Calulcating WVD growth')
+print('Calculating WVD growth')
 wvd_diff = flow.convolve(flow.diff(wvd)/dt[:,np.newaxis,np.newaxis], func=lambda x:np.nanmean(x,0))
 
 print('Calculating markers')
@@ -112,10 +112,6 @@ l_flow = lf.Flow_Func(flow.flow_for[...,0], flow.flow_back[...,0],
 watershed = lf.flow_network_watershed(edges, markers, l_flow, mask=mask,
                                       structure=ndi.generate_binary_structure(3,1),
                                       debug_mode=True)
-
-
-ref_grid = xr.DataArray(ref_grid, goes_ds.CMI_C13.coords, goes_ds.CMI_C13.dims)
-ref_mask = xr.DataArray(ref_mask, goes_ds.CMI_C13.coords, goes_ds.CMI_C13.dims)
 
 print ('Saving to %s' % (save_path))
 dataset = xr.Dataset({'watershed':(('t','y','x'), watershed),
