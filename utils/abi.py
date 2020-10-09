@@ -1,5 +1,7 @@
 import numpy as np
 from pyproj import Proj
+from dateutil.parser import parse as parse_date
+from .geo import get_sza
 
 def get_abi_proj(dataset):
     return Proj(proj='geos', h=dataset.goes_imager_projection.perspective_point_height,
@@ -77,18 +79,48 @@ def _contrast_correction(color, contrast):
     COLOR = np.maximum(COLOR, 0)
     return COLOR
 
-def get_abi_rgb(C01, C02, C03, gamma=0.4, contrast=100):
-    R = np.maximum(C02, 0)
-    R = np.minimum(R, 1)
-    G = np.maximum(C03, 0)
-    G = np.minimum(G, 1)
-    B = np.maximum(C01, 0)
-    B = np.minimum(B, 1)
-    R = np.power(R, gamma)
-    G = np.power(G, gamma)
-    B = np.power(B, gamma)
+def _get_channel_range(data, min=0, max=1, gamma=1):
+    out = np.maximum(data, min)
+    out = np.minimum(data, max)
+    out = (out-min)/(max-min)
+    out = np.power(out, gamma)
+    return out
+
+def get_abi_rgb(mcmip_ds, gamma=0.4, contrast=100,
+                correct_sza=False, min_sza=0.05):
+    if correct_sza:
+        cossza = np.cos(get_goes_sza(mcmip_ds))
+        cossza = np.maximum(cossza, min_sza)
+
+        R = _get_channel_range(mcmip_ds.CMI_C02/cossza, gamma=gamma)
+        G = _get_channel_range(mcmip_ds.CMI_C03/cossza, gamma=gamma)
+        B = _get_channel_range(mcmip_ds.CMI_C01/cossza, gamma=gamma)
+
+    else:
+        R = _get_channel_range(mcmip_ds.CMI_C02, gamma=gamma)
+        G = _get_channel_range(mcmip_ds.CMI_C03, gamma=gamma)
+        B = _get_channel_range(mcmip_ds.CMI_C01, gamma=gamma)
+
     G_true = 0.48358168 * R + 0.45706946 * B + 0.06038137 * G
     G_true = np.maximum(G_true, 0)
     G_true = np.minimum(G_true, 1)
-    RGB = _contrast_correction(np.stack([R, G_true, B], -1), contrast=contrast)
+    RGB = np.maximum(np.minimum(_contrast_correction(np.stack([R, G_true, B], -1), contrast=contrast),1),0)
     return RGB
+
+def get_abi_deep_cloud_rgb(mcmip_ds, min_sza=0.05):
+    cossza = np.cos(get_goes_sza(mcmip_ds))
+    cossza = np.maximum(cossza, min_sza)
+
+    R = _get_channel_range(mcmip_ds.CMI_C08 - mcmip_ds.CMI_C13, -35, 5)
+
+    G = _get_channel_range(mcmip_ds.CMI_C02/cossza, 0.7, 1.0)
+
+    B = _get_channel_range(mcmip_ds.CMI_C13, 243.6, 292.6)
+
+    RGB = np.maximum(np.minimum(np.stack([R, G, B], -1)*(np.minimum(cossza, min_sza)/min_sza)[...,np.newaxis], 1), 0)
+    return RGB
+
+def get_goes_sza(goes_ds):
+    date = parse_date(str(goes_ds.t.data))
+    lats, lons = get_abi_lat_lon(goes_ds)
+    return get_sza(date, lats, lons)

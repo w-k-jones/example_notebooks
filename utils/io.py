@@ -15,7 +15,7 @@ def find_abi_blobs(date, satellite=16, product='Rad', view='C', mode=3, channel=
 
     level = 'L1b' if product == 'Rad' else 'L2'
 
-    blob_path = 'ABI-%s-%s%s/%04d/%03d/%02d/' % (level, product, view, date.year, doy, date.hour)
+    blob_path = 'ABI-%s-%s%.1s/%04d/%03d/%02d/' % (level, product, view, date.year, doy, date.hour)
     if product == 'Rad' or product == 'CMI':
         blob_prefix = 'OR_ABI-%s-%s%s-M%1dC%02d_G%2d_s' % (level, product, view, mode, channel, satellite)
     else:
