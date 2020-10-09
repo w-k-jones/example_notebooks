@@ -136,10 +136,10 @@ outer_labels = lf.flow_label(outer_watershed, l_flow, structure=ndi.generate_bin
 
 print ('Saving to %s' % (save_path))
 dataset = xr.Dataset({
-                      'inner_watershed':(('t','y','x'), watershed),
-                      'inner_labels':(('t','y','x'), labels),
-                      'outer_watershed':(('t','y','x'), watershed),
-                      'outer_labels':(('t','y','x'), labels),
+                      'inner_watershed':(('t','y','x'), inner_watershed),
+                      'inner_labels':(('t','y','x'), inner_labels),
+                      'outer_watershed':(('t','y','x'), outer_watershed),
+                      'outer_labels':(('t','y','x'), outer_labels),
                       'wvd_diff':(('t','y','x'), wvd_diff),
                       'x_flow_for':(('t','y','x'), flow.flow_for[...,0]),
                       'x_flow_back':(('t','y','x'), flow.flow_back[...,0]),
