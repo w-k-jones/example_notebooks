@@ -120,7 +120,7 @@ dataset = xr.Dataset({'watershed':(('t','y','x'), watershed),
                       'x_flow_back':(('t','y','x'), flow.flow_back[...,0]),
                       'y_flow_for':(('t','y','x'), flow.flow_for[...,1]),
                       'y_flow_back':(('t','y','x'), flow.flow_back[...,1]),
-                      )},
+                      },
                      goes_ds.CMI_C13.coords)
 dataset.to_netcdf(save_path)
 print('Finished successfully')
