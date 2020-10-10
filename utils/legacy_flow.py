@@ -595,8 +595,16 @@ def flow_label(data, flow, structure=ndi.generate_binary_structure(3,1)):
                    }
     # converge
         for k in sorted(list(n_label_map.keys()))[::-1]:
+            prev_labels = []
             while n_label_map[k] != n_label_map[n_label_map[k]]:
+                # Here we need to check in case it gets stuck in a loop of assignments
+                # To solve this we make a list of previous assignments, and then check to ensure we aren't repeating ourselves
+                prev_labels.append(n_label_map[k])
+                if n_label_map[n_label_map[k]] in prev_labels:
+                    n_label_map[k] = max(prev_labels[prev_labels.index(n_label_map[n_label_map[k]]):])
+                    break
                 n_label_map[k] = n_label_map[n_label_map[k]]
+
     #     Check convergence
         for k in n_label_map:
             assert n_label_map[k] == n_label_map[n_label_map[k]]
