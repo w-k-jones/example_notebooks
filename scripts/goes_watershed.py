@@ -133,7 +133,11 @@ print('Labelling')
 
 inner_labels = lf.flow_label(inner_watershed, l_flow, structure=ndi.generate_binary_structure(3,1))
 
+print('Max inner label:', inner_labels.max())
+
 outer_labels = lf.flow_label(outer_watershed, l_flow, structure=ndi.generate_binary_structure(3,1))
+
+print('Max outer label:', outer_labels.max())
 
 print ('Saving to %s' % (save_path))
 dataset = xr.Dataset({
