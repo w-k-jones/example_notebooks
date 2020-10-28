@@ -11,7 +11,7 @@ def get_goes_extent(goes_ds):
     img_extent=(goes_ds.x[0]*h, goes_ds.x[-1]*h, goes_ds.y[-1]*h, goes_ds.y[0]*h)
     return img_extent
 
-def goes_subplot(goes_ds, *args, fig=None, **kwargs):
+def goes_subplot(goes_ds, *args, fig=None, cbar_size="5%" , cbar_pad=0.1 , **kwargs):
     if fig is None:
         fig=plt.gcf()
     crs = get_goes_ccrs(goes_ds)
@@ -19,17 +19,17 @@ def goes_subplot(goes_ds, *args, fig=None, **kwargs):
 
     ax = fig.add_subplot(*args, projection=crs, **kwargs)
     ax_divider = make_axes_locatable(ax)
-    cax = ax_divider.new_horizontal(size="5%", pad=0.1, axes_class=plt.Axes)
+    cax = ax_divider.new_horizontal(size=cbar_size, pad=cbar_pad, axes_class=plt.Axes)
 
     ax._imshow=ax.imshow.__get__(ax)
-    
+
     def colorbar(self, *args, **kwargs):
         fig.add_axes(cax)
         cbar = plt.colorbar(*args, cax=cax, **kwargs)
         return cbar
 
-    def imshow(self, *args, **kwargs):
-        img = self._imshow(*args, extent=img_extent, **kwargs)
+    def imshow(self, *args, extent=img_extent, **kwargs):
+        img = self._imshow(*args, extent=extent, **kwargs)
         return img
 
     ax.colorbar = colorbar.__get__(ax)
