@@ -81,7 +81,7 @@ for i in range(2):
                                         save_dir=goes_data_path,
                                         replicate_path=True, check_download=True,
                                         n_attempts=1, download_missing=True))
-    except Exception as e: # Yes this is bad but google cloud storage can throw some wierd exceptions
+    except Exception as e: # Yes this is bad but google cloud storage can throw some weird exceptions that are hard to catch otherwise
         err = e
     else:
         break
@@ -97,7 +97,7 @@ glm_grid = xr.DataArray(np.zeros(goes_ds.CMI_C13.shape), goes_ds.CMI_C13.coords,
 print('Processing GLM data')
 for i, t in enumerate(glm_grid.t):
     try:
-        glm_grid[i] = glm.get_glm_hist(glm_files, goes_ds,
+        glm_grid[i] = glm.get_uncorrected_glm_hist(glm_files, goes_ds,
                                        abi_dates[i]-timedelta(minutes=2.5),
                                        abi_dates[i]+timedelta(minutes=2.5))
     except (ValueError, IndexError) as e:

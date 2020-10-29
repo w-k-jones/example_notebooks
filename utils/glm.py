@@ -125,8 +125,24 @@ def get_corrected_glm_x_y(glm_filename, goes_ds):
             out = (np.array([]), np.array([]))
     return out
 
+def get_uncorrected_glm_x_y(glm_filename, goes_ds):
+    with xr.open_dataset(glm_filename) as glm_ds:
+        if glm_ds.flash_lat.data.size>0 and glm_ds.flash_lon.data.size>0:
+            glm_lon = glm_ds.flash_lon.data
+            glm_lat = glm_ds.flash_lat.data
+            out = get_abi_x_y(glm_lat, glm_lon, goes_ds)
+        else:
+            out = (np.array([]), np.array([]))
+    return out
+
 def get_glm_hist(glm_files, goes_ds, start_time, end_time):
     x_bins, y_bins = get_ds_bin_edges(goes_ds, ('x','y'))
     glm_x, glm_y = (np.concatenate(locs) for locs in zip(*[get_corrected_glm_x_y(glm_files[i], goes_ds)
+                                                           for i in glm_files if i > start_time and i < end_time]))
+    return np.histogram2d(glm_y, glm_x, bins=(y_bins[::-1], x_bins))[0][::-1]
+
+def get_uncorrected_glm_hist(glm_files, goes_ds, start_time, end_time):
+    x_bins, y_bins = get_ds_bin_edges(goes_ds, ('x','y'))
+    glm_x, glm_y = (np.concatenate(locs) for locs in zip(*[get_uncorrected_glm_x_y(glm_files[i], goes_ds)
                                                            for i in glm_files if i > start_time and i < end_time]))
     return np.histogram2d(glm_y, glm_x, bins=(y_bins[::-1], x_bins))[0][::-1]
