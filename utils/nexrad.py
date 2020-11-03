@@ -1,12 +1,14 @@
 import numpy as np
+from numpy import ma
 import pyart
 import tarfile
 from scipy import stats
+import xarray as xr
 from dateutil.parser import parse as parse_date
 from datetime import datetime, timedelta
 
 from .abi import get_abi_x_y
-from .dataset import get_ds_bin_edges
+from .dataset import get_ds_bin_edges, get_ds_shape, get_ds_core_coords, get_datetime_from_coord
 
 def get_gates_from_tar(nexrad_archive):
     time_list = []
@@ -27,7 +29,7 @@ def get_gates_from_tar(nexrad_archive):
                 alt_list.append(radar.gate_altitude['data'])
                 lat_list.append(radar.gate_latitude['data'])
                 lon_list.append(radar.gate_longitude['data'])
-                ref_list.append(radar.fields['reflectivity']['data'].data)
+                ref_list.append(radar.fields['reflectivity']['data'])
 
                 start_time = parse_date(item[4:19], fuzzy=True)
                 time_list.append([start_time+timedelta(seconds=t) for t in radar.time['data']])
@@ -38,7 +40,7 @@ def get_gates_from_tar(nexrad_archive):
     alts = np.concatenate(alt_list, 0)
     lats = np.concatenate(lat_list, 0)
     lons = np.concatenate(lon_list, 0)
-    refs = np.concatenate(ref_list, 0)
+    refs = ma.concatenate(ref_list, 0)
 
     return times, alts, lats, lons, refs
 
@@ -62,7 +64,8 @@ def get_nexrad_hist(nexrad_time, nexrad_alt, nexrad_lat, nexrad_lon, nexrad_ref,
     x,y = map_nexrad_to_goes(nexrad_lat[wh_t][mask], nexrad_lon[wh_t][mask],
                                     nexrad_alt[wh_t][mask], goes_ds)
 
-    ref_mask = np.isfinite(nexrad_ref[wh_t][mask])
+    # ref_mask = nexrad_ref[wh_t][mask]>-33.
+    ref_mask = np.logical_and(np.isfinite(nexrad_ref[wh_t][mask]), ~nexrad_ref[wh_t][mask].mask)
 
     x_bins, y_bins = get_ds_bin_edges(goes_ds, ('x','y'))
     counts_raw = np.histogram2d(y, x, bins=(y_bins[::-1], x_bins))[0][::-1]
@@ -78,11 +81,44 @@ def get_nexrad_hist(nexrad_time, nexrad_alt, nexrad_lat, nexrad_lon, nexrad_ref,
 
     return counts_raw, counts_masked, ref_hist
 
-def get_site_grids(nexrad_file, goes_ds, goes_dates):
+def get_site_grids(nexrad_file, goes_ds, goes_dates, **kwargs):
     radar_gates = get_gates_from_tar(nexrad_file)
     temp_stack = [get_nexrad_hist(*radar_gates, goes_ds, dt-timedelta(minutes=2.5),
-                                  dt+timedelta(minutes=2.5)) for dt in goes_dates]
+                                  dt+timedelta(minutes=2.5), **kwargs) for dt in goes_dates]
     return [np.stack(temp) for temp in zip(*temp_stack)]
+
+def regrid_nexrad(nexrad_files, goes_ds, **kwargs):
+    goes_dates = get_datetime_from_coord(goes_ds.t)
+    goes_shape = get_ds_shape(goes_ds)
+    goes_coords = get_ds_core_coords(goes_ds)
+    goes_dims = tuple(goes_coords.keys())
+
+    ref_total = np.zeros(goes_shape)
+    ref_counts_raw = np.zeros(goes_shape)
+    ref_counts_masked = np.zeros(goes_shape)
+
+    for nf in nexrad_files:
+        print(datetime.now(), nf)
+        try:
+            raw_count, stack_count, stack_mean = get_site_grids(nf, goes_ds,
+                                                                goes_dates, **kwargs)
+        except (ValueError, IndexError) as e:
+            print('Error processing nexrad data')
+            print(e)
+        wh = np.isfinite(stack_mean*stack_count)
+        ref_total[wh] += stack_mean[wh]*stack_count[wh]
+        ref_counts_raw += raw_count
+        ref_counts_masked += stack_count
+
+    ref_grid = ref_total/ref_counts_masked
+    ref_mask = ref_counts_raw == 0
+    ref_grid[ref_mask] = np.nan
+    ref_grid[np.logical_and(~ref_mask, np.isnan(ref_grid))] = -33
+
+    ref_grid = xr.DataArray(ref_grid, goes_ds.CMI_C13.coords, goes_ds.CMI_C13.dims)
+    ref_mask = xr.DataArray(ref_mask, goes_ds.CMI_C13.coords, goes_ds.CMI_C13.dims)
+
+    return ref_grid, ref_mask
 
 def get_nexrad_sitenames():
     nexrad_sites = ['TJUA','KCBW','KGYX','KCXX','KBOX','KENX','KBGM','KBUF','KTYX','KOKX','KDOX','KDIX','KPBZ','KCCX','KRLX','KAKQ','KFCX','KLWX','KMHX','KRAX','KLTX','KCLX','KCAE','KGSP','KFFC','KVAX','KJGX','KEVX','KJAX','KBYX','KMLB','KAMX','KTLH','KTBW','KBMX','KEOX','KHTX','KMXX','KMOB','KDGX','KGWX','KMRX','KNQA','KOHX','KHPX','KJKL','KLVX','KPAH','KILN','KCLE','KDTX','KAPX','KGRR','KMQT','KVWX','KIND','KIWX','KLOT','KILX','KGRB','KARX','KMKX','KDLH','KMPX','KDVN','KDMX','KEAX','KSGF','KLSX','KSRX','KLZK','KPOE','KLCH','KLIX','KSHV','KAMA','KEWX','KBRO','KCRP','KFWS','KDYX','KEPZ','KGRK','KHGX','KDFX','KLBB','KMAF','KSJT','KFDR','KTLX','KINX','KVNX','KDDC','KGLD','KTWX','KICT','KUEX','KLNX','KOAX','KABR','KUDX','KFSD','KBIS','KMVX','KMBX','KBLX','KGGW','KTFX','KMSX','KCYS','KRIW','KFTG','KGJX','KPUX','KABX','KFDX','KHDX','KFSX','KIWA','KEMX','KYUX','KICX','KMTX','KCBX','KSFX','KLRX','KESX','KRGX','KBBX','KEYX','KBHX','KVTX','KDAX','KNKX','KMUX','KHNX','KSOX','KVBX','PHKI','PHKM','PHMO','PHWA','KMAX','KPDT','KRTX','KLGX','KATX','KOTX','PABC','PAPD','PAHG','PAKC','PAIH','PAEC','PACG','PGUA','LPLA','RKJK','RKSG','RODN']

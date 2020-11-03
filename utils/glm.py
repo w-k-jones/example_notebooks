@@ -2,16 +2,17 @@
 import xarray as xr
 import numpy as np
 import pyproj as proj4
+from datetime import timedelta
 
 from glmtools.io.lightning_ellipse import lightning_ellipse_rev
 from lmatools.coordinateSystems import CoordinateSystem
 from lmatools.grid.fixed import get_GOESR_coordsys
 
 from .abi import get_abi_x_y
-from .dataset import get_ds_bin_edges
-this_ellps=0
+from .dataset import get_ds_bin_edges, get_ds_shape, get_ds_core_coords, get_datetime_from_coord
 
 # equatorial and polar radii
+this_ellps=0
 ltg_ellps_re, ltg_ellps_rp = lightning_ellipse_rev[this_ellps]
 
 # Functions from GLM notebook for parallax correction
@@ -135,7 +136,7 @@ def get_uncorrected_glm_x_y(glm_filename, goes_ds):
             out = (np.array([]), np.array([]))
     return out
 
-def get_glm_hist(glm_files, goes_ds, start_time, end_time):
+def get_corrected_glm_hist(glm_files, goes_ds, start_time, end_time):
     x_bins, y_bins = get_ds_bin_edges(goes_ds, ('x','y'))
     glm_x, glm_y = (np.concatenate(locs) for locs in zip(*[get_corrected_glm_x_y(glm_files[i], goes_ds)
                                                            for i in glm_files if i > start_time and i < end_time]))
@@ -146,3 +147,28 @@ def get_uncorrected_glm_hist(glm_files, goes_ds, start_time, end_time):
     glm_x, glm_y = (np.concatenate(locs) for locs in zip(*[get_uncorrected_glm_x_y(glm_files[i], goes_ds)
                                                            for i in glm_files if i > start_time and i < end_time]))
     return np.histogram2d(glm_y, glm_x, bins=(y_bins[::-1], x_bins))[0][::-1]
+
+def regrid_glm(glm_files, goes_ds, corrected=False):
+    goes_dates = get_datetime_from_coord(goes_ds.t)
+    goes_shape = get_ds_shape(goes_ds)
+    goes_coords = get_ds_core_coords(goes_ds)
+    goes_dims = tuple(goes_coords.keys())
+
+    glm_grid = np.zeros(goes_shape)
+
+    for i in range(goes_shape[0]):
+        try:
+            if corrected:
+                glm_grid[i] = get_glm_hist(glm_files, goes_ds,
+                                           goes_dates[i]-timedelta(minutes=2.5),
+                                           goes_dates[i]+timedelta(minutes=2.5))
+            else:
+                glm_grid[i] = get_uncorrected_glm_hist(glm_files, goes_ds,
+                                           goes_dates[i]-timedelta(minutes=2.5),
+                                           goes_dates[i]+timedelta(minutes=2.5))
+        except (ValueError, IndexError) as e:
+            print('Error processing glm data at step %d' % i)
+            print(e)
+
+    glm_grid = xr.DataArray(glm_grid, goes_ds.CMI_C13.coords, goes_ds.CMI_C13.dims)
+    return glm_grid
