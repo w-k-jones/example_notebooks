@@ -92,15 +92,23 @@ def get_abi_rgb(mcmip_ds, gamma=0.4, contrast=100,
         cossza = np.cos(get_goes_sza(mcmip_ds))
         cossza = np.maximum(cossza, min_sza)
 
-        R = _get_channel_range(mcmip_ds.CMI_C02/cossza, gamma=gamma)
-        G = _get_channel_range(mcmip_ds.CMI_C03/cossza, gamma=gamma)
-        B = _get_channel_range(mcmip_ds.CMI_C01/cossza, gamma=gamma)
+        RGB = _get_rgb(mcmip_ds.CMI_C01/cossza,
+                       mcmip_ds.CMI_C02/cossza,
+                       mcmip_ds.CMI_C03/cossza,
+                       gamma=gamma, contrast=contrast)
 
     else:
-        R = _get_channel_range(mcmip_ds.CMI_C02, gamma=gamma)
-        G = _get_channel_range(mcmip_ds.CMI_C03, gamma=gamma)
-        B = _get_channel_range(mcmip_ds.CMI_C01, gamma=gamma)
+        RGB = _get_rgb(mcmip_ds.CMI_C01,
+                       mcmip_ds.CMI_C02,
+                       mcmip_ds.CMI_C03,
+                       gamma=gamma, contrast=contrast)
 
+    return RGB
+
+def _get_rgb(C01, C02, C03, gamma=0.4, contrast=0.05):
+    R = _get_channel_range(C02, gamma=gamma)
+    G = _get_channel_range(C03, gamma=gamma)
+    B = _get_channel_range(C01, gamma=gamma)
     G_true = 0.48358168 * R + 0.45706946 * B + 0.06038137 * G
     G_true = np.maximum(G_true, 0)
     G_true = np.minimum(G_true, 1)
