@@ -29,6 +29,7 @@ def goes_subplot(goes_ds, *args, fig=None, cbar_size="5%" , cbar_pad=0.1 , **kwa
     h = goes_ds.goes_imager_projection.perspective_point_height
 
     ax = fig.add_subplot(*args, projection=crs, **kwargs)
+    ax.set_extent(img_extent, ax.projection)
     ax_divider = make_axes_locatable(ax)
     cax = ax_divider.new_horizontal(size=cbar_size, pad=cbar_pad, axes_class=plt.Axes)
 
