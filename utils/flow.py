@@ -218,7 +218,8 @@ class Flow:
             return self.convolve(data, structure=np.ones((3,3,3)),
                                  func=self._sobel_func, method=method)
 
-    def watershed(self, field, markers, mask=None, structure=None,
+    def watershed(self, field, markers, mask=None,
+                  structure=ndi.generate_binary_structure(3,1),
                   max_iter=100, debug_mode=False):
         from .legacy_flow import Flow_Func, flow_network_watershed
 

@@ -20,7 +20,7 @@ def get_min_dist_for_objects(distance_array, labels):
                 dists[i] = np.min(distance_array.ravel()[args[bins[i]:bins[i+1]]])
     return dists, mask_count
 
-def get_marker_distance(labels):
+def get_marker_distance(labels, time_range=1):
     marker_distance = np.zeros(labels.shape)
     for i in range(marker_distance.shape[0]):
         if np.any(labels[i]!=0):
@@ -28,7 +28,8 @@ def get_marker_distance(labels):
         else:
             marker_distance[i] = np.inf
 
-    marker_distance[1:] = np.fmin(marker_distance[:-1], marker_distance[1:])
-    marker_distance[:-1] = np.fmin(marker_distance[:-1], marker_distance[1:])
+    for i in range(1, time_range+1):
+        marker_distance[i:] = np.fmin(marker_distance[:-i], marker_distance[i:])
+        marker_distance[:-i] = np.fmin(marker_distance[:-i], marker_distance[i:])
 
     return marker_distance

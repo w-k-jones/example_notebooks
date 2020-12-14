@@ -34,7 +34,7 @@ def filter_labels_by_length(labels, min_length):
     counter = 1
     for i in range(bins.size-1):
         if bins[i+1]>bins[i]:
-            if object_lengths[i]<3:
+            if object_lengths[i]<min_length:
                 labels.ravel()[args[bins[i]:bins[i+1]]] = 0
             else:
                 labels.ravel()[args[bins[i]:bins[i+1]]] = counter
