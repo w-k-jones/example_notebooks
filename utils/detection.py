@@ -72,5 +72,31 @@ def detect_growth_markers(flow, wvd):
     if isinstance(wvd, xr.DataArray):
         wvd_diff_raw = xr.DataArray(wvd_diff_raw, wvd.coords, wvd.dims)
         marker_labels = xr.DataArray(marker_labels, wvd.coords, wvd.dims)
-    
+
     return wvd_diff_raw, marker_labels
+
+def edge_watershed(flow, field, markers, upper_threshold, lower_threshold, erode_distance=5):
+    if isinstance(field, xr.DataArray):
+        field = np.maximum(np.minimum(field.data, upper_threshold), lower_threshold)
+    else:
+        field = np.maximum(np.minimum(field, upper_threshold), lower_threshold)
+
+    if isinstance(markers, xr.DataArray):
+        markers = markers.data
+
+    field[markers!=0] = upper_threshold
+
+    s_struct = np.ones([1,3,3])
+    mask = ndi.binary_erosion(field==lower_threshold, structure=s_struct, iterations=erode_distance, border_value=1)
+
+    edges = flow.sobel(field, direction='uphill')
+
+    watershed = flow.watershed(edges, markers, mask=mask, structure=ndi.generate_binary_structure(3,1))
+
+    s_struct = ndi.generate_binary_structure(2,1)[np.newaxis]
+    watershed = watershed*ndi.binary_opening(watershed!=0, structure=s_struct).astype(int)
+
+    if isinstance(field, xr.DataArray):
+        watershed = xr.DataArray(watershed, field.coords, field.dims)
+
+    return watershed
