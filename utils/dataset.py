@@ -27,3 +27,12 @@ def get_ds_core_coords(ds):
 
 def get_datetime_from_coord(coord):
     return [parse_date(t.item()) for t in coord.astype('datetime64[s]').astype(str)]
+
+def time_diff(datetime_list):
+    return [(datetime_list[1]-datetime_list[0]).total_seconds()/60] \
+             + [(datetime_list[i+2]-datetime_list[i]).total_seconds()/120 \
+                for i in range(len(datetime_list)-2)] \
+             + [(datetime_list[-1]-datetime_list[-2]).total_seconds()/60]
+
+def get_time_diff_from_coord(coord):
+    return np.array(time_diff(get_datetime_from_coord(coord)))

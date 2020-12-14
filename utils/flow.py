@@ -218,48 +218,69 @@ class Flow:
             return self.convolve(data, structure=np.ones((3,3,3)),
                                  func=self._sobel_func, method=method)
 
+    def watershed(self, field, markers, mask=None, structure=None,
+                  max_iter=100, debug_mode=False):
+        from .legacy_flow import Flow_Func, flow_network_watershed
 
-class Flow_dev:
-    """
-    Class to perform semi-lagrangian operations using optical flow
-    """
-    def __init__(self, dataset, smoothing_passes=1, flow_kwargs={}):
-        get_flow(self, dataset, smoothing_passes, flow_kwargs)
+        l_flow = Flow_Func(self.flow_for[...,0], self.flow_back[...,0],
+                              self.flow_for[...,1], self.flow_back[...,1])
 
-    def get_flow(self, data, smoothing_passes, flow_kwargs):
-        """
-        Get both forwards and backwards optical flow vectors along the time
-        dimension from an array with dimensions (time, y, x)
-        """
-        self.shape = self.shape
-        self.flow_for = np.full(self.shape+(2,), np.nan, dtype=np.float32)
-        self.flow_back = np.full(self.shape+(2,), np.nan, dtype=np.float32)
+        return flow_network_watershed(field, markers, l_flow,
+                                         mask=mask, structure=structure,
+                                         max_iter=max_iter,
+                                         debug_mode=debug_mode)
 
-        b = dataset[0].compute().data
-        for i in range(self.shape[0]-1):
-            a, b = b, dataset[i+1].compute().data
-            self.flow_for[i] = cv_flow(a, b, **flow_kwargs)
-            self.flow_back[i+1] = cv_flow(b, a, **flow_kwargs)
-            if smoothing_passes > 0:
-                for j in range(smoothing_passes):
-                    self._smooth_flow_step(i)
 
-        self.flow_back[0] = -self.flow_for[0]
-        self.flow_for[-1] = -self.flow_back[-1]
+    def label(self, data, structure=ndi.generate_binary_structure(3,1)):
+        from .legacy_flow import Flow_Func, flow_label
 
-    def _smooth_flow_step(self, step):
-        flow_for_warp = np.full_like(self.flow_for[step], np.nan)
-        flow_back_warp = np.full_like(self.flow_back[step+1], np.nan)
+        l_flow = Flow_Func(self.flow_for[...,0], self.flow_back[...,0],
+                              self.flow_for[...,1], self.flow_back[...,1])
 
-        flow_for_warp[...,0] = -self._warp_flow_step(self.flow_back[step+1,...,0], step)
-        flow_for_warp[...,1] = -self._warp_flow_step(self.flow_back[step+1,...,1], step)
-        flow_back_warp[...,0] = -self._warp_flow_step(self.flow_for[step,...,0], step+1, direction='backward')
-        flow_back_warp[...,1] = -self._warp_flow_step(self.flow_for[step,...,1], step+1, direction='backward')
+        return flow_label(data, l_flow, structure=structure)
 
-        self.flow_for[step] = np.nanmean([self.flow_for[step],
-                                          flow_for_warp], 0)
-        self.flow_back[step+1] = np.nanmean([self.flow_back[step+1],
-                                             flow_back_warp], 0)
+
+# class Flow_dev:
+#     """
+#     Class to perform semi-lagrangian operations using optical flow
+#     """
+#     def __init__(self, dataset, smoothing_passes=1, flow_kwargs={}):
+#         get_flow(self, dataset, smoothing_passes, flow_kwargs)
+#
+#     def get_flow(self, data, smoothing_passes, flow_kwargs):
+#         """
+#         Get both forwards and backwards optical flow vectors along the time
+#         dimension from an array with dimensions (time, y, x)
+#         """
+#         self.shape = self.shape
+#         self.flow_for = np.full(self.shape+(2,), np.nan, dtype=np.float32)
+#         self.flow_back = np.full(self.shape+(2,), np.nan, dtype=np.float32)
+#
+#         b = dataset[0].compute().data
+#         for i in range(self.shape[0]-1):
+#             a, b = b, dataset[i+1].compute().data
+#             self.flow_for[i] = cv_flow(a, b, **flow_kwargs)
+#             self.flow_back[i+1] = cv_flow(b, a, **flow_kwargs)
+#             if smoothing_passes > 0:
+#                 for j in range(smoothing_passes):
+#                     self._smooth_flow_step(i)
+#
+#         self.flow_back[0] = -self.flow_for[0]
+#         self.flow_for[-1] = -self.flow_back[-1]
+#
+#     def _smooth_flow_step(self, step):
+#         flow_for_warp = np.full_like(self.flow_for[step], np.nan)
+#         flow_back_warp = np.full_like(self.flow_back[step+1], np.nan)
+#
+#         flow_for_warp[...,0] = -self._warp_flow_step(self.flow_back[step+1,...,0], step)
+#         flow_for_warp[...,1] = -self._warp_flow_step(self.flow_back[step+1,...,1], step)
+#         flow_back_warp[...,0] = -self._warp_flow_step(self.flow_for[step,...,0], step+1, direction='backward')
+#         flow_back_warp[...,1] = -self._warp_flow_step(self.flow_for[step,...,1], step+1, direction='backward')
+#
+#         self.flow_for[step] = np.nanmean([self.flow_for[step],
+#                                           flow_for_warp], 0)
+#         self.flow_back[step+1] = np.nanmean([self.flow_back[step+1],
+#                                              flow_back_warp], 0)
 
 def to_8bit(array, vmin=None, vmax=None):
     """

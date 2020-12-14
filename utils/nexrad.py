@@ -3,6 +3,7 @@ from numpy import ma
 import pyart
 import tarfile
 from scipy import stats
+from scipy import ndimage as ndi
 import xarray as xr
 from dateutil.parser import parse as parse_date
 from datetime import datetime, timedelta
@@ -81,9 +82,50 @@ def get_nexrad_hist(nexrad_time, nexrad_alt, nexrad_lat, nexrad_lon, nexrad_ref,
 
     return counts_raw, counts_masked, ref_hist
 
+def get_3d_nexrad_hist(nexrad_time, nexrad_alt, nexrad_lat, nexrad_lon, nexrad_ref,
+                       goes_ds, start_time, end_time, min_alt=2500, max_alt=10000, alt_step=500):
+    wh_t = np.logical_and(nexrad_time>=start_time, nexrad_time<end_time)
+    alt_bins = np.linspace(min_alt,max_alt,(max_alt-min_alt)//alt_step+1)
+    x_bins, y_bins = get_ds_bin_edges(goes_ds, ('x','y'))
+
+    mask = np.logical_and(nexrad_alt[wh_t]>min_alt, nexrad_alt[wh_t]<max_alt)
+    ref_mask = np.logical_and(np.isfinite(nexrad_ref[wh_t][mask]),
+                              np.logical_not(nexrad_ref[wh_t][mask].mask))
+
+    x,y = map_nexrad_to_goes(nexrad_lat[wh_t][mask], nexrad_lon[wh_t][mask],
+                                        nexrad_alt[wh_t][mask], goes_ds)
+    alt = nexrad_alt[wh_t][mask]
+
+    raw_mask = np.histogram2d(y, x, bins=(y_bins[::-1], x_bins))[0][::-1] != 0
+    y_slice, x_slice = ndi.find_objects(raw_mask)[0]
+    y_bin_slice = slice(y_slice.start, y_slice.stop+1)
+    x_bin_slice = slice(x_slice.start, x_slice.stop+1)
+
+    counts_3d = np.histogramdd((alt[ref_mask], y[ref_mask], x[ref_mask]),
+                               bins=(alt_bins, y_bins[y_bin_slice][::-1], x_bins[x_bin_slice])
+                               )[0][:,::-1]
+
+    sum_3d = np.histogramdd((alt[ref_mask], y[ref_mask], x[ref_mask]),
+                            bins=(alt_bins, y_bins[y_bin_slice][::-1], x_bins[x_bin_slice]),
+                            weights=nexrad_ref[wh_t][mask][ref_mask])[0][:,::-1]
+
+    counts_2d = np.zeros(raw_mask.shape)
+    mean_2d = np.full(raw_mask.shape, np.nan)
+    max_2d = np.full(raw_mask.shape, np.nan)
+
+    import warnings
+    # Catch warnings as this throws a lot of runtimewarnings due to NaNs
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        counts_2d[y_slice, x_slice] = np.nansum(counts_3d, 0)
+        mean_2d[y_slice, x_slice] = np.nansum(sum_3d, 0) / np.nansum(counts_3d, 0)
+        max_2d[y_slice, x_slice] = np.nanmax(sum_3d/counts_3d, 0)
+
+    return raw_mask, counts_2d, mean_2d, max_2d
+
 def get_site_grids(nexrad_file, goes_ds, goes_dates, **kwargs):
     radar_gates = get_gates_from_tar(nexrad_file)
-    temp_stack = [get_nexrad_hist(*radar_gates, goes_ds, dt-timedelta(minutes=2.5),
+    temp_stack = [get_3d_nexrad_hist(*radar_gates, goes_ds, dt-timedelta(minutes=2.5),
                                   dt+timedelta(minutes=2.5), **kwargs) for dt in goes_dates]
     return [np.stack(temp) for temp in zip(*temp_stack)]
 
@@ -96,12 +138,13 @@ def regrid_nexrad(nexrad_files, goes_ds, **kwargs):
     ref_total = np.zeros(goes_shape)
     ref_counts_raw = np.zeros(goes_shape)
     ref_counts_masked = np.zeros(goes_shape)
+    ref_max = np.full(goes_shape, np.nan)
 
     for nf in nexrad_files:
         print(datetime.now(), nf)
         try:
-            raw_count, stack_count, stack_mean = get_site_grids(nf, goes_ds,
-                                                                goes_dates, **kwargs)
+            raw_count, stack_count, stack_mean, stack_max = get_site_grids(nf, goes_ds,
+                                                                           goes_dates, **kwargs)
         except (ValueError, IndexError) as e:
             print('Error processing nexrad data')
             print(e)
@@ -109,16 +152,20 @@ def regrid_nexrad(nexrad_files, goes_ds, **kwargs):
         ref_total[wh] += stack_mean[wh]*stack_count[wh]
         ref_counts_raw += raw_count
         ref_counts_masked += stack_count
+        ref_max = np.fmax(ref_max, stack_max)
 
     ref_grid = ref_total/ref_counts_masked
     ref_mask = ref_counts_raw == 0
     ref_grid[ref_mask] = np.nan
     ref_grid[np.logical_and(~ref_mask, np.isnan(ref_grid))] = -33
+    ref_max[ref_mask] = np.nan
+    ref_max[np.logical_and(~ref_mask, np.isnan(ref_max))] = -33
 
     ref_grid = xr.DataArray(ref_grid, goes_ds.CMI_C13.coords, goes_ds.CMI_C13.dims)
     ref_mask = xr.DataArray(ref_mask, goes_ds.CMI_C13.coords, goes_ds.CMI_C13.dims)
+    ref_max = xr.DataArray(ref_max, goes_ds.CMI_C13.coords, goes_ds.CMI_C13.dims)
 
-    return ref_grid, ref_mask
+    return ref_grid, ref_mask, ref_max
 
 def get_nexrad_sitenames():
     nexrad_sites = ['TJUA','KCBW','KGYX','KCXX','KBOX','KENX','KBGM','KBUF','KTYX','KOKX','KDOX','KDIX','KPBZ','KCCX','KRLX','KAKQ','KFCX','KLWX','KMHX','KRAX','KLTX','KCLX','KCAE','KGSP','KFFC','KVAX','KJGX','KEVX','KJAX','KBYX','KMLB','KAMX','KTLH','KTBW','KBMX','KEOX','KHTX','KMXX','KMOB','KDGX','KGWX','KMRX','KNQA','KOHX','KHPX','KJKL','KLVX','KPAH','KILN','KCLE','KDTX','KAPX','KGRR','KMQT','KVWX','KIND','KIWX','KLOT','KILX','KGRB','KARX','KMKX','KDLH','KMPX','KDVN','KDMX','KEAX','KSGF','KLSX','KSRX','KLZK','KPOE','KLCH','KLIX','KSHV','KAMA','KEWX','KBRO','KCRP','KFWS','KDYX','KEPZ','KGRK','KHGX','KDFX','KLBB','KMAF','KSJT','KFDR','KTLX','KINX','KVNX','KDDC','KGLD','KTWX','KICT','KUEX','KLNX','KOAX','KABR','KUDX','KFSD','KBIS','KMVX','KMBX','KBLX','KGGW','KTFX','KMSX','KCYS','KRIW','KFTG','KGJX','KPUX','KABX','KFDX','KHDX','KFSX','KIWA','KEMX','KYUX','KICX','KMTX','KCBX','KSFX','KLRX','KESX','KRGX','KBBX','KEYX','KBHX','KVTX','KDAX','KNKX','KMUX','KHNX','KSOX','KVBX','PHKI','PHKM','PHMO','PHWA','KMAX','KPDT','KRTX','KLGX','KATX','KOTX','PABC','PAPD','PAHG','PAKC','PAIH','PAEC','PACG','PGUA','LPLA','RKJK','RKSG','RODN']
