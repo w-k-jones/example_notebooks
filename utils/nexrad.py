@@ -125,7 +125,7 @@ def get_3d_nexrad_hist(nexrad_time, nexrad_alt, nexrad_lat, nexrad_lon, nexrad_r
 
 def get_site_grids(nexrad_file, goes_ds, goes_dates, **kwargs):
     radar_gates = get_gates_from_tar(nexrad_file)
-    temp_stack = [get_3d_nexrad_hist(*radar_gates, goes_ds, dt-timedelta(minutes=2.5),
+    temp_stack = [get_nexrad_hist(*radar_gates, goes_ds, dt-timedelta(minutes=2.5),
                                   dt+timedelta(minutes=2.5), **kwargs) for dt in goes_dates]
     return [np.stack(temp) for temp in zip(*temp_stack)]
 
@@ -143,8 +143,8 @@ def regrid_nexrad(nexrad_files, goes_ds, **kwargs):
     for nf in nexrad_files:
         print(datetime.now(), nf)
         try:
-            raw_count, stack_count, stack_mean, stack_max = get_site_grids(nf, goes_ds,
-                                                                           goes_dates, **kwargs)
+            raw_count, stack_count, stack_mean = get_site_grids(nf, goes_ds,
+                                                                goes_dates, **kwargs)
         except (ValueError, IndexError) as e:
             print('Error processing nexrad data')
             print(e)
@@ -152,20 +152,20 @@ def regrid_nexrad(nexrad_files, goes_ds, **kwargs):
         ref_total[wh] += stack_mean[wh]*stack_count[wh]
         ref_counts_raw += raw_count
         ref_counts_masked += stack_count
-        ref_max = np.fmax(ref_max, stack_max)
+        # ref_max = np.fmax(ref_max, stack_max)
 
     ref_grid = ref_total/ref_counts_masked
     ref_mask = ref_counts_raw == 0
     ref_grid[ref_mask] = np.nan
     ref_grid[np.logical_and(~ref_mask, np.isnan(ref_grid))] = -33
-    ref_max[ref_mask] = np.nan
-    ref_max[np.logical_and(~ref_mask, np.isnan(ref_max))] = -33
+    # ref_max[ref_mask] = np.nan
+    # ref_max[np.logical_and(~ref_mask, np.isnan(ref_max))] = -33
 
     ref_grid = xr.DataArray(ref_grid, goes_ds.CMI_C13.coords, goes_ds.CMI_C13.dims)
     ref_mask = xr.DataArray(ref_mask, goes_ds.CMI_C13.coords, goes_ds.CMI_C13.dims)
     ref_max = xr.DataArray(ref_max, goes_ds.CMI_C13.coords, goes_ds.CMI_C13.dims)
 
-    return ref_grid, ref_mask, ref_max
+    return ref_grid, ref_mask #, ref_max
 
 def get_nexrad_sitenames():
     nexrad_sites = ['TJUA','KCBW','KGYX','KCXX','KBOX','KENX','KBGM','KBUF','KTYX','KOKX','KDOX','KDIX','KPBZ','KCCX','KRLX','KAKQ','KFCX','KLWX','KMHX','KRAX','KLTX','KCLX','KCAE','KGSP','KFFC','KVAX','KJGX','KEVX','KJAX','KBYX','KMLB','KAMX','KTLH','KTBW','KBMX','KEOX','KHTX','KMXX','KMOB','KDGX','KGWX','KMRX','KNQA','KOHX','KHPX','KJKL','KLVX','KPAH','KILN','KCLE','KDTX','KAPX','KGRR','KMQT','KVWX','KIND','KIWX','KLOT','KILX','KGRB','KARX','KMKX','KDLH','KMPX','KDVN','KDMX','KEAX','KSGF','KLSX','KSRX','KLZK','KPOE','KLCH','KLIX','KSHV','KAMA','KEWX','KBRO','KCRP','KFWS','KDYX','KEPZ','KGRK','KHGX','KDFX','KLBB','KMAF','KSJT','KFDR','KTLX','KINX','KVNX','KDDC','KGLD','KTWX','KICT','KUEX','KLNX','KOAX','KABR','KUDX','KFSD','KBIS','KMVX','KMBX','KBLX','KGGW','KTFX','KMSX','KCYS','KRIW','KFTG','KGJX','KPUX','KABX','KFDX','KHDX','KFSX','KIWA','KEMX','KYUX','KICX','KMTX','KCBX','KSFX','KLRX','KESX','KRGX','KBBX','KEYX','KBHX','KVTX','KDAX','KNKX','KMUX','KHNX','KSOX','KVBX','PHKI','PHKM','PHMO','PHWA','KMAX','KPDT','KRTX','KLGX','KATX','KOTX','PABC','PAPD','PAHG','PAKC','PAIH','PAEC','PACG','PGUA','LPLA','RKJK','RKSG','RODN']

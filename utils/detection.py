@@ -1,7 +1,7 @@
 import numpy as np
 import xarray as xr
 from scipy import ndimage as ndi
-from .analysis import filter_labels_by_length
+from .analysis import filter_labels_by_length, filter_labels_by_length_and_mask
 from .dataset import get_time_diff_from_coord
 
 # Filtering of the growth metric occurs in three steps:
@@ -18,7 +18,6 @@ def filtered_tdiff(flow, raw_diff):
                                   func=lambda x:np.nanmean(x,0))
     filtered_diff = flow.convolve(filtered_diff, structure=t_struct,
                                   func=lambda x:np.nanmax(x,0))
-    filtered_diff = ndi.grey_opening(filtered_diff, footprint=s_struct)
 
     return filtered_diff
 
@@ -51,7 +50,10 @@ def get_curvature_filter(wvd, sigma=2, threshold=0, direction='negative'):
 def detect_growth_markers(flow, wvd):
     wvd_diff_raw = flow.diff(wvd)/get_time_diff_from_coord(wvd.t)[:,np.newaxis,np.newaxis]
 
-    wvd_diff_filtered = filtered_tdiff(flow, wvd_diff_raw)*get_curvature_filter(wvd)
+    wvd_diff_smoothed = filtered_tdiff(flow, wvd_diff_raw)
+
+    s_struct = ndi.generate_binary_structure(2,1)[np.newaxis,...]
+    wvd_diff_filtered = ndi.grey_opening(wvd_diff_smoothed, footprint=s_struct) * get_curvature_filter(wvd)
 
     if isinstance(wvd, xr.DataArray):
         watershed_markers = np.logical_and(wvd_diff_filtered>=0.5, wvd.data>=-5)
@@ -63,17 +65,16 @@ def detect_growth_markers(flow, wvd):
                                       mask=wvd_diff_filtered<0.25,
                                       structure=ndi.generate_binary_structure(3,1))
 
-    s_struct = ndi.generate_binary_structure(2,1)[np.newaxis,...]
 
     marker_labels = flow.label(ndi.binary_opening(marker_regions, structure=s_struct))
 
-    marker_labels = filter_labels_by_length(marker_labels, 3)
+    marker_labels = filter_labels_by_length_and_mask(marker_labels, wvd.data>=-5, 3)
 
     if isinstance(wvd, xr.DataArray):
         wvd_diff_raw = xr.DataArray(wvd_diff_raw, wvd.coords, wvd.dims)
         marker_labels = xr.DataArray(marker_labels, wvd.coords, wvd.dims)
 
-    return wvd_diff_raw, marker_labels
+    return wvd_diff_smoothed, marker_labels
 
 def edge_watershed(flow, field, markers, upper_threshold, lower_threshold, erode_distance=5):
     if isinstance(field, xr.DataArray):
