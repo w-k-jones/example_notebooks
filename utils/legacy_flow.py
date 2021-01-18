@@ -423,9 +423,13 @@ def flow_network_watershed(field, markers, flow_func, mask=None, structure=None,
     # wh = np.logical_and(type_converge==1, np.logical_not(np.logical_xor(markers!=0, mask)))
     max_markers = np.nanmax(markers)
     temp_markers = ndi.label(wh_local_min)[0][wh_local_min]+max_markers
-    if temp_markers.max()<np.iinfo(np.int16).max:
+    if np.any(wh_local_min):
+        max_temp_marker = temp_markers.max()
+    else:
+        max_temp_marker = max_markers
+    if max_temp_marker<np.iinfo(np.int16).max:
         mark_dtype = np.int16
-    elif temp_markers.max()<np.iinfo(np.int32).max:
+    elif max_temp_marker<np.iinfo(np.int32).max:
         mark_dtype = np.int32
     else:
         mark_dtype = np.int64
