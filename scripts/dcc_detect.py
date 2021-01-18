@@ -229,14 +229,23 @@ max_marker_growth = apply_func_to_labels(growth_markers.data, wvd_growth, np.nan
 max_marker_wvd = apply_func_to_labels(growth_markers.data, wvd.data, np.nanmax)
 min_marker_bt = apply_func_to_labels(growth_markers.data, bt.data, np.nanmin)
 anvil_for_markers = apply_func_to_labels(growth_markers.data, inner_labels, np.nanmax)
-growth_area = np.bincount(growth_markers.data.ravel())[1:]
-growth_lengths = [fo[0].stop-fo[0].start for fo in ndi.find_objects(growth_markers.data)]
+if np.any(growth_markers>0):
+    growth_area = np.bincount(growth_markers.data.ravel())[1:]
+    growth_lengths = np.array([fo[0].stop-fo[0].start for fo in ndi.find_objects(growth_markers.data)], dtype=int)
+else:
+    growth_area = np.array([], dtype=int)
+    growth_lengths = np.array([], dtype=int)
 
 max_anvil_growth = apply_func_to_labels(inner_labels, wvd_growth, np.nanmax)
 max_anvil_wvd = apply_func_to_labels(inner_labels, wvd.data, np.nanmax)
 min_anvil_bt = apply_func_to_labels(inner_labels, bt.data, np.nanmin)
-anvil_area = np.bincount(inner_labels.ravel())[1:]
-anvil_lengths = [fo[0].stop-fo[0].start for fo in ndi.find_objects(inner_labels)]
+if np.any(growth_markers>0):
+    anvil_area = np.bincount(inner_labels.ravel())[1:]
+    anvil_lengths = np.array([fo[0].stop-fo[0].start for fo in ndi.find_objects(inner_labels)], dtype=int)
+else:
+    anvil_area = np.array([], dtype=int)
+    anvil_lengths = np.array([], dtype=int)
+
 
 print(datetime.now(), 'Preparing output')
 new_coords = {'t':goes_ds.t, 'y':goes_ds.y, 'x':goes_ds.x,
