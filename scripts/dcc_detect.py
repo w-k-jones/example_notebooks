@@ -178,71 +178,101 @@ print("warm WVD regions: n =",wvd_labels.max())
 wvd_distance = get_marker_distance(wvd_labels, time_range=3)
 
 print(datetime.now(), 'Validating detection accuracy')
-marker_pod = np.histogram(marker_distance[glm_grid>0],
-                          weights=glm_grid.data[glm_grid>0],
-                          bins=40,
-                          range=[0,40])[0]/np.sum(glm_grid.data[glm_grid>0])
-wvd_pod = np.histogram(wvd_distance[glm_grid>0],
-                       weights=glm_grid.data[glm_grid>0],
-                       bins=40,
-                       range=[0,40])[0]/np.sum(glm_grid.data[glm_grid>0])
-anvil_pod = np.histogram(anvil_distance[glm_grid>0],
-                         weights=glm_grid.data[glm_grid>0],
-                         bins=40,
-                         range=[0,40])[0]/np.sum(glm_grid.data[glm_grid>0])
+marker_pod_hist = np.histogram(marker_distance[glm_grid>0],
+                               weights=glm_grid.data[glm_grid>0], bins=40,
+                               range=[0,40])[0] / np.sum(glm_grid.data[glm_grid>0])
+wvd_pod_hist = np.histogram(wvd_distance[glm_grid>0],
+                            weights=glm_grid.data[glm_grid>0], bins=40,
+                            range=[0,40])[0] / np.sum(glm_grid.data[glm_grid>0])
+anvil_pod_hist = np.histogram(anvil_distance[glm_grid>0],
+                              weights=glm_grid.data[glm_grid>0], bins=40,
+                              range=[0,40])[0] / np.sum(glm_grid.data[glm_grid>0])
 
-growth_far = np.histogram(get_min_dist_for_objects(glm_distance, growth_markers)[0],
-                         bins=40,
-                         range=[0,40])[0]/growth_markers.data.max()
-wvd_far = np.histogram(get_min_dist_for_objects(glm_distance, wvd_labels)[0],
-                         bins=40,
-                         range=[0,40])[0]/wvd_labels.max()
-anvil_far = np.histogram(get_min_dist_for_objects(glm_distance, inner_labels)[0],
-                         bins=40,
-                         range=[0,40])[0]/inner_labels.max()
+growth_min_distance = get_min_dist_for_objects(glm_distance, growth_markers)[0]
+growth_far_hist = np.histogram(growth_min_distance, bins=40,
+                               range=[0,40])[0] / growth_markers.data.max()
+wvd_min_distance = get_min_dist_for_objects(glm_distance, wvd_labels)[0]
+wvd_far_hist = np.histogram(wvd_min_distance, bins=40,
+                            range=[0,40])[0] / wvd_labels.max()
+anvil_min_distance = get_min_dist_for_objects(glm_distance, inner_labels)[0]
+anvil_far_hist = np.histogram(anvil_min_distance, bins=40,
+                              range=[0,40])[0] / inner_labels.max()
 
 print('markers:')
 print('n =', growth_markers.data.max())
-print(np.sum(marker_pod[:10]))
-print(1-np.sum(growth_far[:10]))
+print(np.sum(marker_pod_hist[:10]))
+print(1-np.sum(growth_far_hist[:10]))
 
 print('WVD:')
 print('n =', wvd_labels.max())
-print(np.sum(wvd_pod[:10]))
-print(1-np.sum(wvd_far[:10]))
+print(np.sum(wvd_pod_hist[:10]))
+print(1-np.sum(wvd_far_hist[:10]))
 
 print('anvil:')
 print('n =', inner_labels.max())
-print(np.sum(anvil_pod[:10]))
-print(1-np.sum(anvil_far[:10]))
+print(np.sum(anvil_pod_hist[:10]))
+print(1-np.sum(anvil_far_hist[:10]))
 
 print('total GLM flashes: ', np.sum(glm_grid.data))
 
+# Get statistics about various properties of each label
+from utils.analysis import apply_func_to_labels
+max_marker_growth = apply_func_to_labels(growth_markers.data, wvd_growth, np.nanmax)
+max_marker_wvd = apply_func_to_labels(growth_markers.data, wvd.data, np.nanmax)
+min_marker_bt = apply_func_to_labels(growth_markers.data, bt.data, np.nanmin)
+anvil_for_markers = apply_func_to_labels(growth_markers.data, inner_labels, np.nanmax)
+growth_area = np.bincount(growth_markers.data.ravel())[1:]
+growth_lengths = [fo[0].stop-fo[0].start for fo in ndi.find_objects(growth_markers.data)]
+
+max_anvil_growth = apply_func_to_labels(inner_labels, wvd_growth, np.nanmax)
+max_anvil_wvd = apply_func_to_labels(inner_labels, wvd.data, np.nanmax)
+min_anvil_bt = apply_func_to_labels(inner_labels, bt.data, np.nanmin)
+anvil_area = np.bincount(inner_labels.ravel())[1:]
+anvil_lengths = [fo[0].stop-fo[0].start for fo in ndi.find_objects(inner_labels)]
+
 print(datetime.now(), 'Preparing output')
+new_coords = {'t':goes_ds.t, 'y':goes_ds.y, 'x':goes_ds.x,
+              'y_image':goes_ds.y_image, 'x_image':goes_ds.x_image,
+              'core_index':np.arange(1,growth_markers.data.max()+1,dtype=int),
+              'anvil_index':np.arange(1,inner_labels.max()+1,dtype=int)}
 dataset = xr.Dataset({
                       'wvd_growth':(('t','y','x'), wvd_growth),
                       'growth_markers':(('t','y','x'), growth_markers),
                       'thick_anvil':(('t','y','x'), inner_labels),
                       'thin_anvil':(('t','y','x'), outer_watershed),
                       'glm_grid':(('t','y','x'), glm_grid),
-                      'growth_pod_hist':(('nbins',), marker_pod),
-                      'growth_far_hist':(('nbins',), growth_far),
-                      'wvd_pod_hist':(('nbins',), wvd_pod),
-                      'wvd_far_hist':(('nbins',), wvd_far),
-                      'anvil_pod_hist':(('nbins',), anvil_pod),
-                      'anvil_far_hist':(('nbins',), anvil_far),
-                      'growth_pod':np.sum(marker_pod[:10]),
-                      'growth_far':1-np.sum(growth_far[:10]),
+                      'growth_pod_hist':(('nbins',), marker_pod_hist),
+                      'growth_far_hist':(('nbins',), growth_far_hist),
+                      'wvd_pod_hist':(('nbins',), wvd_pod_hist),
+                      'wvd_far_hist':(('nbins',), wvd_far_hist),
+                      'anvil_pod_hist':(('nbins',), anvil_pod_hist),
+                      'anvil_far_hist':(('nbins',), anvil_far_hist),
+                      'growth_pod':np.sum(marker_pod_hist[:10]),
+                      'growth_far':1-np.sum(growth_far_hist[:10]),
                       'n_growth':growth_markers.data.max(),
-                      'wvd_pod':np.sum(wvd_pod[:10]),
-                      'wvd_far':1-np.sum(wvd_far[:10]),
+                      'wvd_pod':np.sum(wvd_pod_hist[:10]),
+                      'wvd_far':1-np.sum(wvd_far_hist[:10]),
                       'n_wvd':wvd_labels.max(),
-                      'anvil_pod':np.sum(anvil_pod[:10]),
-                      'anvil_far':1-np.sum(anvil_far[:10]),
+                      'anvil_pod':np.sum(anvil_pod_hist[:10]),
+                      'anvil_far':1-np.sum(anvil_far_hist[:10]),
                       'n_anvil':inner_labels.max(),
-                      'n_glm':np.sum(glm_grid.data)
+                      'n_glm':np.sum(glm_grid.data),
+                      'core_to_anvil_index':(('core_index',), anvil_for_markers),
+                      'max_marker_growth':(('core_index',), max_marker_growth),
+                      'max_marker_wvd':(('core_index',), max_marker_wvd),
+                      'min_marker_bt':(('core_index',), min_marker_bt),
+                      'growth_min_distance':(('core_index',), growth_min_distance),
+                      'core_area':(('core_index',), growth_area),
+                      'core_length':(('core_index',), growth_lengths),
+                      'max_anvil_growth':(('anvil_index',), max_anvil_growth),
+                      'max_anvil_wvd':(('anvil_index',), max_anvil_wvd),
+                      'min_anvil_bt':(('anvil_index',), min_anvil_bt),
+                      'anvil_min_distance':(('anvil_index',), anvil_min_distance),
+                      'cores_per_anvil':(('anvil_index',), np.bincount(anvil_for_markers)[1:]),
+                      'anvil_area':(('anvil_index',), anvil_area),
+                      'anvil_length':(('anvil_index',), anvil_lengths),
                       },
-                     goes_ds.CMI_C13.coords)
+                      new_coords)
 
 print(datetime.now(), 'Saving to %s' % (save_path))
 dataset.to_netcdf(save_path)
