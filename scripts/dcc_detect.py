@@ -91,6 +91,9 @@ if np.any(np.logical_not(wh_valid_dates)):
 
 print('%d files found'%len(abi_files))
 
+if len(abi_files)==0:
+    raise ValueError("No ABI files discovered, aborting")
+
 # Extract fields and load into memory
 print(datetime.now(),'Loading WVD')
 wvd = goes_ds.CMI_C08 - goes_ds.CMI_C10
@@ -165,8 +168,13 @@ glm_files = sorted(sum([sorted(io.find_glm_files(date, satellite=16,
                                      n_attempts=1, download_missing=True))
                  for date in dates], []))
 glm_files = {io.get_goes_date(i):i for i in glm_files}
-print(datetime.now(),'Regridding GLM data')
-glm_grid = glm.regrid_glm(glm_files, goes_ds, corrected=False)
+print('%d files found'%len(glm_files))
+if len(glm_files)==0:
+    warnings.warn("No GLM Files discovered, skipping validation")
+    glm_grid = np.zeros_like(wvd.data)
+else:
+    print(datetime.now(),'Regridding GLM data')
+    glm_grid = glm.regrid_glm(glm_files, goes_ds, corrected=False)
 
 print(datetime.now(),'Calculating marker distances')
 marker_distance = get_marker_distance(growth_markers, time_range=3)
