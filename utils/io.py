@@ -128,7 +128,21 @@ def find_glm_files(date, satellite=16, save_dir='./', replicate_path=True, check
 
         save_file = os.path.join(save_path, blob_name)
         if os.path.exists(save_file):
-            files += [save_file]
+            if check_download:
+                try:
+                    test_ds = xr.open_dataset(save_file)
+                    test_ds.close()
+                except (IOError, OSError):
+                    warnings.warn('File download failed: '+save_file)
+                    os.remove(save_file)
+                    download_goes_blobs([blob], save_dir=save_dir, replicate_path=replicate_path,
+                                                check_download=check_download, n_attempts=n_attempts)
+                    if os.path.exists(save_file):
+                        files += [save_file]
+                else:
+                    files += [save_file]
+            else:
+                files += [save_file]
         elif download_missing:
             download_goes_blobs([blob], save_dir=save_dir, replicate_path=replicate_path,
                                         check_download=check_download, n_attempts=n_attempts)
