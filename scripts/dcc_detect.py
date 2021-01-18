@@ -3,6 +3,7 @@ import os
 import sys
 import inspect
 import itertools
+import warnings
 
 import numpy as np
 from numpy import ma
@@ -57,7 +58,7 @@ if cmd_folder not in sys.path:
 
 from utils import io, abi, glm
 from utils.flow import Flow
-from utils import legacy_flow as lf
+from utils.dataset import get_datetime_from_coord, get_time_diff_from_coord
 from utils.detection import detect_growth_markers, edge_watershed
 from utils.analysis import filter_labels_by_length_and_mask
 from utils.validation import get_min_dist_for_objects, get_marker_distance
@@ -69,18 +70,25 @@ if not os.path.isdir(goes_data_path):
 print(datetime.now(),'Loading ABI data')
 print('Saving data to:',goes_data_path)
 dates = pd.date_range(start_date, end_date, freq='H', closed='left').to_pydatetime()
-abi_files = sorted(sum([io.find_abi_files(date, satellite=16, product='MCMIP', view='C', mode=3,
-                                          save_dir=goes_data_path,
-                                          replicate_path=True, check_download=True,
-                                          n_attempts=1, download_missing=True)
+abi_files = sorted(sum([sum([io.find_abi_files(date, satellite=16, product='MCMIP',
+                                               view='C', mode=mode,
+                                               save_dir=goes_data_path,
+                                               replicate_path=True, check_download=True,
+                                               n_attempts=1, download_missing=True)
+                             for mode in [3,6]], [])
                         for date in dates], []))
 
 # Test with some multichannel data
 ds_slice = {'x':slice(x0,x1), 'y':slice(y0,y1)}
 # Load a stack of goes datasets using xarray. Select a region over Northern Florida. (full file size in 1500x2500 pixels)
 goes_ds = xr.open_mfdataset(abi_files, concat_dim='t', combine='nested').isel(ds_slice)
-# Get dates
-abi_dates = [io.get_goes_date(i) for i in abi_files]
+goes_dates = get_datetime_from_coord(goes_ds.t)
+# Check for invalid dates (which are given a date in 2000)
+wh_valid_dates = [gd > datetime(2001,1,1) for gd in goes_dates]
+if np.any(np.logical_not(wh_valid_dates)):
+    warnings.warn("Missing timestep found, removing")
+    goes_ds = goes_ds.isel({'t':wh_valid_dates})
+
 print('%d files found'%len(abi_files))
 
 # Extract fields and load into memory
@@ -96,6 +104,33 @@ print(datetime.now(),'Loading SWD')
 swd = goes_ds.CMI_C13 - goes_ds.CMI_C15
 if hasattr(swd, "compute"):
     swd = swd.compute()
+
+wh_all_missing = np.any([np.all(np.isnan(wvd), (1,2)),
+                         np.all(np.isnan(bt), (1,2)),
+                         np.all(np.isnan(swd), (1,2))],
+                         0)
+if np.any(wh_all_missing):
+    warnings.warn("Missing data found at timesteps")
+    goes_ds = goes_ds.isel({'t':np.logical_not(wh_all_missing)})
+
+    print(datetime.now(),'Loading WVD')
+    wvd = goes_ds.CMI_C08 - goes_ds.CMI_C10
+    if hasattr(wvd, "compute"):
+        wvd = wvd.compute()
+    print(datetime.now(),'Loading BT')
+    bt = goes_ds.CMI_C13
+    if hasattr(bt, "compute"):
+        bt = bt.compute()
+    print(datetime.now(),'Loading SWD')
+    swd = goes_ds.CMI_C13 - goes_ds.CMI_C15
+    if hasattr(swd, "compute"):
+        swd = swd.compute()
+
+# Now we have all the valid timesteps, check for gaps in the time series
+goes_timedelta = get_time_diff_from_coord(goes_ds.t)
+
+if np.any([td>15.5 for td in goes_timedelta]):
+    raise ValueError("Time gaps in abi data greater than 15 minutes, aborting")
 
 print(datetime.now(),'Calculating flow field')
 flow_kwargs = {'pyr_scale':0.5, 'levels':5, 'winsize':16, 'iterations':3,

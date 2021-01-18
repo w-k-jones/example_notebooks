@@ -60,14 +60,16 @@ def detect_growth_markers(flow, wvd):
     else:
         np.logical_and(wvd_diff_filtered>=0.5, wvd>=-5)
 
+    watershed_markers = flow.label(watershed_markers)
+    watershed_markers = filter_labels_by_length_and_mask(watershed_markers, wvd.data>=-5, 3)
+
     marker_regions = flow.watershed(-wvd_diff_filtered,
-                                      np.logical_and(wvd_diff_filtered>=0.5, wvd.data>=-5),
-                                      mask=wvd_diff_filtered<0.25,
-                                      structure=ndi.generate_binary_structure(3,1))
+                                    watershed_markers != 0,
+                                    mask=wvd_diff_filtered<0.25,
+                                    structure=ndi.generate_binary_structure(3,1))
 
 
     marker_labels = flow.label(ndi.binary_opening(marker_regions, structure=s_struct))
-
     marker_labels = filter_labels_by_length_and_mask(marker_labels, wvd.data>=-5, 3)
 
     if isinstance(wvd, xr.DataArray):
