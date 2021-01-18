@@ -246,6 +246,10 @@ else:
     anvil_area = np.array([], dtype=int)
     anvil_lengths = np.array([], dtype=int)
 
+if np.any(anvil_for_markers):
+    cores_per_anvil = np.bincount(anvil_for_markers)[1:]
+else:
+    cores_per_anvil = np.array([], dtype=int)
 
 print(datetime.now(), 'Preparing output')
 new_coords = {'t':goes_ds.t, 'y':goes_ds.y, 'x':goes_ds.x,
@@ -285,7 +289,7 @@ dataset = xr.Dataset({
                       'max_anvil_wvd':(('anvil_index',), max_anvil_wvd),
                       'min_anvil_bt':(('anvil_index',), min_anvil_bt),
                       'anvil_min_distance':(('anvil_index',), anvil_min_distance),
-                      'cores_per_anvil':(('anvil_index',), np.bincount(anvil_for_markers)[1:]),
+                      'cores_per_anvil':(('anvil_index',), cores_per_anvil),
                       'anvil_area':(('anvil_index',), anvil_area),
                       'anvil_length':(('anvil_index',), anvil_lengths),
                       },
