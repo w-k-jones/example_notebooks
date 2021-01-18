@@ -135,10 +135,11 @@ def find_glm_files(date, satellite=16, save_dir='./', replicate_path=True, check
                 except (IOError, OSError):
                     warnings.warn('File download failed: '+save_file)
                     os.remove(save_file)
-                    download_goes_blobs([blob], save_dir=save_dir, replicate_path=replicate_path,
-                                                check_download=check_download, n_attempts=n_attempts)
-                    if os.path.exists(save_file):
-                        files += [save_file]
+                    if download_missing:
+                        download_goes_blobs([blob], save_dir=save_dir, replicate_path=replicate_path,
+                                            check_download=check_download, n_attempts=n_attempts)
+                        if os.path.exists(save_file):
+                            files += [save_file]
                 else:
                     files += [save_file]
             else:
