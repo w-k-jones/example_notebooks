@@ -189,15 +189,15 @@ print("warm WVD regions: n =",wvd_labels.max(), flush=True)
 wvd_distance = get_marker_distance(wvd_labels, time_range=3)
 
 print(datetime.now(), 'Validating detection accuracy', flush=True)
-marker_pod_hist = np.histogram(marker_distance[glm_grid>0],
-                               weights=glm_grid.data[glm_grid>0], bins=40,
-                               range=[0,40])[0] / np.sum(glm_grid.data[glm_grid>0])
-wvd_pod_hist = np.histogram(wvd_distance[glm_grid>0],
-                            weights=glm_grid.data[glm_grid>0], bins=40,
-                            range=[0,40])[0] / np.sum(glm_grid.data[glm_grid>0])
+marker_pod_hist = np.histogram(marker_distance[glm_grid.data>0],
+                               weights=glm_grid.data[glm_grid.data>0], bins=40,
+                               range=[0,40])[0] / np.sum(glm_grid.data[glm_grid.data>0])
+wvd_pod_hist = np.histogram(wvd_distance[glm_grid.data>0],
+                            weights=glm_grid.data[glm_grid.data>0], bins=40,
+                            range=[0,40])[0] / np.sum(glm_grid.data[glm_grid.data>0])
 anvil_pod_hist = np.histogram(anvil_distance[glm_grid>0],
-                              weights=glm_grid.data[glm_grid>0], bins=40,
-                              range=[0,40])[0] / np.sum(glm_grid.data[glm_grid>0])
+                              weights=glm_grid.data[glm_grid.data>0], bins=40,
+                              range=[0,40])[0] / np.sum(glm_grid.data[glm_grid.data>0])
 
 growth_min_distance = get_min_dist_for_objects(glm_distance, growth_markers)[0]
 growth_far_hist = np.histogram(growth_min_distance, bins=40,
