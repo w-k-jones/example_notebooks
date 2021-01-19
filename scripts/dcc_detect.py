@@ -43,7 +43,7 @@ save_dir = args.sd
 if not os.path.isdir(save_dir):
     try:
         os.makedirs(save_dir)
-    except FileExistsError, OSError:
+    except (FileExistsError, OSError):
         pass
 
 save_name = 'detected_dccs_%s.nc' % (start_date.strftime('%Y%m%d_%H0000'))
@@ -67,7 +67,7 @@ goes_data_path = args.gd
 if not os.path.isdir(goes_data_path):
     try:
         os.makedirs(goes_data_path)
-    except FileExistsError, OSError:
+    except (FileExistsError, OSError):
         pass
 
 print(datetime.now(),'Loading ABI data')
