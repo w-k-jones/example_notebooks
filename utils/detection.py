@@ -61,7 +61,7 @@ def detect_growth_markers(flow, wvd):
         np.logical_and(wvd_diff_filtered>=0.5, wvd>=-5)
 
     watershed_markers = flow.label(watershed_markers)
-    watershed_markers = filter_labels_by_length_and_mask(watershed_markers, wvd.data>=-5, 3)
+    watershed_markers = filter_labels_by_length(watershed_markers, 3)
 
     marker_regions = flow.watershed(-wvd_diff_filtered,
                                     watershed_markers != 0,
