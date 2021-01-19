@@ -55,20 +55,18 @@ def detect_growth_markers(flow, wvd):
     s_struct = ndi.generate_binary_structure(2,1)[np.newaxis,...]
     wvd_diff_filtered = ndi.grey_opening(wvd_diff_smoothed, footprint=s_struct) * get_curvature_filter(wvd)
 
-    if isinstance(wvd, xr.DataArray):
-        watershed_markers = np.logical_and(wvd_diff_filtered>=0.5, wvd.data>=-5)
-    else:
-        np.logical_and(wvd_diff_filtered>=0.5, wvd>=-5)
+    watershed_markers = flow.label(wvd_diff_filtered>=0.5)
 
-    watershed_markers = flow.label(watershed_markers)
-    watershed_markers = filter_labels_by_length(watershed_markers, 3)
+    if isinstance(wvd, xr.DataArray):
+        watershed_markers = filter_labels_by_length_and_mask(watershed_markers, wvd.data>=-5, 3)
+    else:
+        watershed_markers = filter_labels_by_length_and_mask(watershed_markers, wvd>=-5, 3)
 
     marker_regions = flow.watershed(-wvd_diff_filtered,
                                     watershed_markers != 0,
                                     mask=wvd_diff_filtered<0.25,
                                     structure=ndi.generate_binary_structure(3,1))
-
-
+    
     marker_labels = flow.label(ndi.binary_opening(marker_regions, structure=s_struct))
     marker_labels = filter_labels_by_length_and_mask(marker_labels, watershed_markers!=0, 3)
 
