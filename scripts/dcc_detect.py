@@ -195,7 +195,7 @@ marker_pod_hist = np.histogram(marker_distance[glm_grid.data>0],
 wvd_pod_hist = np.histogram(wvd_distance[glm_grid.data>0],
                             weights=glm_grid.data[glm_grid.data>0], bins=40,
                             range=[0,40])[0] / np.sum(glm_grid.data[glm_grid.data>0])
-anvil_pod_hist = np.histogram(anvil_distance[glm_grid>0],
+anvil_pod_hist = np.histogram(anvil_distance[glm_grid.data>0],
                               weights=glm_grid.data[glm_grid.data>0], bins=40,
                               range=[0,40])[0] / np.sum(glm_grid.data[glm_grid.data>0])
 
