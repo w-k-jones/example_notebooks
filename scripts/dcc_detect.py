@@ -22,7 +22,7 @@ parser.add_argument('-x1', help='End subset x location', default=2500, type=int)
 parser.add_argument('-y0', help='Initial subset y location', default=0, type=int)
 parser.add_argument('-y1', help='End subset y location', default=1500, type=int)
 parser.add_argument('-sd', help='Directory to save preprocess files',
-                    default='../data/watershed', type=str)
+                    default='../data/dcc_detect', type=str)
 parser.add_argument('-gd', help='GOES directory',
                     default='../data/GOES16', type=str)
 parser.add_argument('--extend_path', help='Extend save directory using year/month/day subdirectories',
@@ -70,8 +70,8 @@ if not os.path.isdir(goes_data_path):
     except (FileExistsError, OSError):
         pass
 
-print(datetime.now(),'Loading ABI data')
-print('Saving data to:',goes_data_path)
+print(datetime.now(),'Loading ABI data', flush=True)
+print('Saving data to:',goes_data_path, flush=True)
 dates = pd.date_range(start_date, end_date, freq='H', closed='left').to_pydatetime()
 abi_files = sorted(sum([sum([io.find_abi_files(date, satellite=16, product='MCMIP',
                                                view='C', mode=mode,
@@ -92,21 +92,21 @@ if np.any(np.logical_not(wh_valid_dates)):
     warnings.warn("Missing timestep found, removing")
     goes_ds = goes_ds.isel({'t':wh_valid_dates})
 
-print('%d files found'%len(abi_files))
+print('%d files found'%len(abi_files), flush=True)
 
 if len(abi_files)==0:
     raise ValueError("No ABI files discovered, aborting")
 
 # Extract fields and load into memory
-print(datetime.now(),'Loading WVD')
+print(datetime.now(),'Loading WVD', flush=True)
 wvd = goes_ds.CMI_C08 - goes_ds.CMI_C10
 if hasattr(wvd, "compute"):
     wvd = wvd.compute()
-print(datetime.now(),'Loading BT')
+print(datetime.now(),'Loading BT', flush=True)
 bt = goes_ds.CMI_C13
 if hasattr(bt, "compute"):
     bt = bt.compute()
-print(datetime.now(),'Loading SWD')
+print(datetime.now(),'Loading SWD', flush=True)
 swd = goes_ds.CMI_C13 - goes_ds.CMI_C15
 if hasattr(swd, "compute"):
     swd = swd.compute()
@@ -119,15 +119,15 @@ if np.any(wh_all_missing):
     warnings.warn("Missing data found at timesteps")
     goes_ds = goes_ds.isel({'t':np.logical_not(wh_all_missing)})
 
-    print(datetime.now(),'Loading WVD')
+    print(datetime.now(),'Loading WVD', flush=True)
     wvd = goes_ds.CMI_C08 - goes_ds.CMI_C10
     if hasattr(wvd, "compute"):
         wvd = wvd.compute()
-    print(datetime.now(),'Loading BT')
+    print(datetime.now(),'Loading BT', flush=True)
     bt = goes_ds.CMI_C13
     if hasattr(bt, "compute"):
         bt = bt.compute()
-    print(datetime.now(),'Loading SWD')
+    print(datetime.now(),'Loading SWD', flush=True)
     swd = goes_ds.CMI_C13 - goes_ds.CMI_C15
     if hasattr(swd, "compute"):
         swd = swd.compute()
@@ -138,31 +138,31 @@ goes_timedelta = get_time_diff_from_coord(goes_ds.t)
 if np.any([td>15.5 for td in goes_timedelta]):
     raise ValueError("Time gaps in abi data greater than 15 minutes, aborting")
 
-print(datetime.now(),'Calculating flow field')
+print(datetime.now(),'Calculating flow field', flush=True)
 flow_kwargs = {'pyr_scale':0.5, 'levels':5, 'winsize':16, 'iterations':3,
                'poly_n':5, 'poly_sigma':1.1, 'flags':256}
 
 flow = Flow(bt, flow_kwargs=flow_kwargs, smoothing_passes=3)
 
-print(datetime.now(),'Detecting growth markers')
+print(datetime.now(),'Detecting growth markers', flush=True)
 wvd_growth, growth_markers = detect_growth_markers(flow, wvd)
 
-print('Growth above threshold: area =', np.sum(wvd_growth>=0.5))
-print('Detected markers: area =', np.sum(growth_markers.data!=0))
-print('Detected markers: n =', growth_markers.data.max())
+print('Growth above threshold: area =', np.sum(wvd_growth>=0.5), flush=True)
+print('Detected markers: area =', np.sum(growth_markers.data!=0), flush=True)
+print('Detected markers: n =', growth_markers.data.max(), flush=True)
 
-print(datetime.now(), 'Detecting thick anvil region')
+print(datetime.now(), 'Detecting thick anvil region', flush=True)
 inner_watershed = edge_watershed(flow, wvd-swd+np.maximum(wvd_growth,0)*5, growth_markers!=0, -5, -15)
 inner_labels = filter_labels_by_length_and_mask(flow.label(inner_watershed.data),
                                                 growth_markers.data!=0, 3)
-print('Detected thick anvils: area =', np.sum(inner_labels!=0))
-print('Detected thick anvils: n =', inner_labels.max())
+print('Detected thick anvils: area =', np.sum(inner_labels!=0), flush=True)
+print('Detected thick anvils: n =', inner_labels.max(), flush=True)
 
-print(datetime.now(), 'Detecting thin anvil region')
+print(datetime.now(), 'Detecting thin anvil region', flush=True)
 outer_watershed = edge_watershed(flow, wvd+swd+np.maximum(wvd_growth,0)*5, inner_labels, 0, -10)
-print('Detected thin anvils: area =', np.sum(outer_watershed!=0))
+print('Detected thin anvils: area =', np.sum(outer_watershed!=0), flush=True)
 
-print(datetime.now(),'Processing GLM data')
+print(datetime.now(),'Processing GLM data', flush=True)
 # Get GLM data
 # Process new GLM data
 glm_files = sorted(sum([sorted(io.find_glm_files(date, satellite=16,
@@ -171,24 +171,24 @@ glm_files = sorted(sum([sorted(io.find_glm_files(date, satellite=16,
                                      n_attempts=1, download_missing=True))
                  for date in dates], []))
 glm_files = {io.get_goes_date(i):i for i in glm_files}
-print('%d files found'%len(glm_files))
+print('%d files found'%len(glm_files), flush=True)
 if len(glm_files)==0:
     warnings.warn("No GLM Files discovered, skipping validation")
     glm_grid = xr.zeros_like(wvd)
 else:
-    print(datetime.now(),'Regridding GLM data')
+    print(datetime.now(),'Regridding GLM data', flush=True)
     glm_grid = glm.regrid_glm(glm_files, goes_ds, corrected=False)
 
-print(datetime.now(),'Calculating marker distances')
+print(datetime.now(),'Calculating marker distances', flush=True)
 marker_distance = get_marker_distance(growth_markers, time_range=3)
 anvil_distance = get_marker_distance(inner_labels, time_range=3)
 glm_distance = get_marker_distance(glm_grid, time_range=3)
 
 wvd_labels = filter_labels_by_length_and_mask(flow.label(wvd>=-5), wvd.data>=-5, 3)
-print("warm WVD regions: n =",wvd_labels.max())
+print("warm WVD regions: n =",wvd_labels.max(), flush=True)
 wvd_distance = get_marker_distance(wvd_labels, time_range=3)
 
-print(datetime.now(), 'Validating detection accuracy')
+print(datetime.now(), 'Validating detection accuracy', flush=True)
 marker_pod_hist = np.histogram(marker_distance[glm_grid>0],
                                weights=glm_grid.data[glm_grid>0], bins=40,
                                range=[0,40])[0] / np.sum(glm_grid.data[glm_grid>0])
@@ -209,22 +209,22 @@ anvil_min_distance = get_min_dist_for_objects(glm_distance, inner_labels)[0]
 anvil_far_hist = np.histogram(anvil_min_distance, bins=40,
                               range=[0,40])[0] / inner_labels.max()
 
-print('markers:')
-print('n =', growth_markers.data.max())
-print(np.sum(marker_pod_hist[:10]))
-print(1-np.sum(growth_far_hist[:10]))
+print('markers:', flush=True)
+print('n =', growth_markers.data.max(), flush=True)
+print(np.sum(marker_pod_hist[:10]), flush=True)
+print(1-np.sum(growth_far_hist[:10]), flush=True)
 
-print('WVD:')
-print('n =', wvd_labels.max())
-print(np.sum(wvd_pod_hist[:10]))
-print(1-np.sum(wvd_far_hist[:10]))
+print('WVD:', flush=True)
+print('n =', wvd_labels.max(), flush=True)
+print(np.sum(wvd_pod_hist[:10]), flush=True)
+print(1-np.sum(wvd_far_hist[:10]), flush=True)
 
-print('anvil:')
-print('n =', inner_labels.max())
-print(np.sum(anvil_pod_hist[:10]))
-print(1-np.sum(anvil_far_hist[:10]))
+print('anvil:', flush=True)
+print('n =', inner_labels.max(), flush=True)
+print(np.sum(anvil_pod_hist[:10]), flush=True)
+print(1-np.sum(anvil_far_hist[:10]), flush=True)
 
-print('total GLM flashes: ', np.sum(glm_grid.data))
+print('total GLM flashes: ', np.sum(glm_grid.data), flush=True)
 
 # Get statistics about various properties of each label
 from utils.analysis import apply_func_to_labels
@@ -242,19 +242,26 @@ else:
 max_anvil_growth = apply_func_to_labels(inner_labels, wvd_growth, np.nanmax)
 max_anvil_wvd = apply_func_to_labels(inner_labels, wvd.data, np.nanmax)
 min_anvil_bt = apply_func_to_labels(inner_labels, bt.data, np.nanmin)
-if np.any(growth_markers>0):
+if np.any(inner_labels>0):
     anvil_area = np.bincount(inner_labels.ravel())[1:]
     anvil_lengths = np.array([fo[0].stop-fo[0].start for fo in ndi.find_objects(inner_labels)], dtype=int)
 else:
     anvil_area = np.array([], dtype=int)
     anvil_lengths = np.array([], dtype=int)
 
+if np.any(outer_watershed>0):
+    thin_anvil_area = np.bincount(outer_watershed.ravel())[1:]
+    thin_anvil_lengths = np.array([fo[0].stop-fo[0].start for fo in ndi.find_objects(outer_watershed)], dtype=int)
+else:
+    thin_anvil_area = np.array([], dtype=int)
+    thin_anvil_lengths = np.array([], dtype=int)
+
 if np.any(anvil_for_markers):
     cores_per_anvil = np.bincount(anvil_for_markers)[1:]
 else:
     cores_per_anvil = np.array([], dtype=int)
 
-print(datetime.now(), 'Preparing output')
+print(datetime.now(), 'Preparing output', flush=True)
 new_coords = {'t':goes_ds.t, 'y':goes_ds.y, 'x':goes_ds.x,
               'y_image':goes_ds.y_image, 'x_image':goes_ds.x_image,
               'core_index':np.arange(1,growth_markers.data.max()+1,dtype=int),
@@ -293,11 +300,13 @@ dataset = xr.Dataset({
                       'min_anvil_bt':(('anvil_index',), min_anvil_bt),
                       'anvil_min_distance':(('anvil_index',), anvil_min_distance),
                       'cores_per_anvil':(('anvil_index',), cores_per_anvil),
-                      'anvil_area':(('anvil_index',), anvil_area),
-                      'anvil_length':(('anvil_index',), anvil_lengths),
+                      'thick_anvil_area':(('anvil_index',), anvil_area),
+                      'thick_anvil_length':(('anvil_index',), anvil_lengths),
+                      'thin_anvil_area':(('anvil_index',), thin_anvil_area),
+                      'thin_anvil_length':(('anvil_index',), thin_anvil_lengths),
                       },
                       new_coords)
 
-print(datetime.now(), 'Saving to %s' % (save_path))
+print(datetime.now(), 'Saving to %s' % (save_path), flush=True)
 dataset.to_netcdf(save_path)
-print(datetime.now(), 'Finished successfully')
+print(datetime.now(), 'Finished successfully', flush=True)
