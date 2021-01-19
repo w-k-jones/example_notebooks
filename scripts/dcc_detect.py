@@ -184,7 +184,9 @@ marker_distance = get_marker_distance(growth_markers, time_range=3)
 anvil_distance = get_marker_distance(inner_labels, time_range=3)
 glm_distance = get_marker_distance(glm_grid, time_range=3)
 
-wvd_labels = filter_labels_by_length_and_mask(flow.label(wvd>=-5), wvd.data>=-5, 3)
+s_struct = ndi.generate_binary_structure(2,1)[np.newaxis]
+wvd_labels = flow.label(ndi.binary_opening(wvd>=-5, structure=s_struct))
+wvd_labels = filter_labels_by_length_and_mask(wvd_labels, wvd.data>=-5, 3)
 print("warm WVD regions: n =",wvd_labels.max(), flush=True)
 wvd_distance = get_marker_distance(wvd_labels, time_range=3)
 
