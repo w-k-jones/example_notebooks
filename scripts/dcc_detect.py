@@ -171,7 +171,7 @@ glm_files = {io.get_goes_date(i):i for i in glm_files}
 print('%d files found'%len(glm_files))
 if len(glm_files)==0:
     warnings.warn("No GLM Files discovered, skipping validation")
-    glm_grid = np.zeros_like(wvd.data)
+    glm_grid = xr.zeros_like(wvd)
 else:
     print(datetime.now(),'Regridding GLM data')
     glm_grid = glm.regrid_glm(glm_files, goes_ds, corrected=False)
