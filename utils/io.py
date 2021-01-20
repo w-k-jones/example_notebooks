@@ -64,7 +64,7 @@ def find_abi_files(date, satellite=16, product='Rad', view='C', mode=3, channel=
     blobs = find_abi_blobs(date, satellite=satellite, product=product, view=view, mode=mode, channel=channel)
     files = []
     for blob in blobs:
-        print(blob.name, end='\r')
+        print(blob.name, end='\r', flush=True)
         blob_path, blob_name = os.path.split(blob.name)
 
         if replicate_path:
@@ -118,7 +118,7 @@ def find_glm_files(date, satellite=16, save_dir='./', replicate_path=True, check
     blobs = find_glm_blobs(date, satellite=satellite)
     files = []
     for blob in blobs:
-        print(blob.name, end='\r')
+        print(blob.name, end='\r', flush=True)
         blob_path, blob_name = os.path.split(blob.name)
 
         if replicate_path:
