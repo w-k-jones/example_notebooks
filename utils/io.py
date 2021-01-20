@@ -45,7 +45,7 @@ def download_goes_blobs(blob_list, save_dir='./', replicate_path=True, check_dow
             try:
                 test_ds = xr.open_dataset(save_file)
                 test_ds.close()
-            except (IOError, OSError):
+            except (IOError, OSError, RuntimeError):
                 warnings.warn('File download failed: '+save_file)
                 os.remove(save_file)
                 if n_attempts>0:
@@ -64,6 +64,7 @@ def find_abi_files(date, satellite=16, product='Rad', view='C', mode=3, channel=
     blobs = find_abi_blobs(date, satellite=satellite, product=product, view=view, mode=mode, channel=channel)
     files = []
     for blob in blobs:
+        print(blob.name, end='\r')
         blob_path, blob_name = os.path.split(blob.name)
 
         if replicate_path:
@@ -79,7 +80,7 @@ def find_abi_files(date, satellite=16, product='Rad', view='C', mode=3, channel=
                 try:
                     test_ds = xr.open_dataset(save_file)
                     test_ds.close()
-                except (IOError, OSError):
+                except (IOError, OSError, RuntimeError):
                     warnings.warn('File download failed: '+save_file)
                     os.remove(save_file)
                     download_goes_blobs([blob], save_dir=save_dir, replicate_path=replicate_path,
@@ -117,6 +118,7 @@ def find_glm_files(date, satellite=16, save_dir='./', replicate_path=True, check
     blobs = find_glm_blobs(date, satellite=satellite)
     files = []
     for blob in blobs:
+        print(blob.name, end='\r')
         blob_path, blob_name = os.path.split(blob.name)
 
         if replicate_path:
@@ -132,7 +134,7 @@ def find_glm_files(date, satellite=16, save_dir='./', replicate_path=True, check
                 try:
                     test_ds = xr.open_dataset(save_file)
                     test_ds.close()
-                except (IOError, OSError):
+                except (IOError, OSError, RuntimeError):
                     warnings.warn('File download failed: '+save_file)
                     os.remove(save_file)
                     if download_missing:
