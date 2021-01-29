@@ -73,13 +73,11 @@ if not os.path.isdir(goes_data_path):
 print(datetime.now(),'Loading ABI data', flush=True)
 print('Saving data to:',goes_data_path, flush=True)
 dates = pd.date_range(start_date, end_date, freq='H', closed='left').to_pydatetime()
-abi_files = sorted(sum([sum([io.find_abi_files(date, satellite=16, product='MCMIP',
-                                               view='C', mode=mode,
-                                               save_dir=goes_data_path,
-                                               replicate_path=True, check_download=True,
-                                               n_attempts=1, download_missing=True)
-                             for mode in [3,6]], [])
-                        for date in dates], []))
+abi_files = io.find_abi_files(dates, satellite=16, product='MCMIP',
+                              view='C', mode=[3,6], save_dir=goes_data_path,
+                              replicate_path=True, check_download=True,
+                              n_attempts=1, download_missing=True, verbose=True,
+                              min_storage=2**30)
 
 # Test with some multichannel data
 ds_slice = {'x':slice(x0,x1), 'y':slice(y0,y1)}
@@ -165,11 +163,10 @@ print('Detected thin anvils: area =', np.sum(outer_watershed!=0), flush=True)
 print(datetime.now(),'Processing GLM data', flush=True)
 # Get GLM data
 # Process new GLM data
-glm_files = sorted(sum([sorted(io.find_glm_files(date, satellite=16,
-                                     save_dir=goes_data_path,
-                                     replicate_path=True, check_download=True,
-                                     n_attempts=1, download_missing=True))
-                 for date in dates], []))
+glm_files = io.find_glm_files(dates, satellite=16, save_dir=goes_data_path,
+                              replicate_path=True, check_download=True,
+                              n_attempts=1, download_missing=True, verbose=True,
+                              min_storage=2**30)
 glm_files = {io.get_goes_date(i):i for i in glm_files}
 print('%d files found'%len(glm_files), flush=True)
 if len(glm_files)==0:
@@ -308,6 +305,7 @@ dataset = xr.Dataset({
                       'thin_anvil_length':(('anvil_index',), thin_anvil_lengths),
                       },
                       new_coords)
+goes_ds.close()
 
 print(datetime.now(), 'Saving to %s' % (save_path), flush=True)
 dataset.to_netcdf(save_path)
