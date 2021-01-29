@@ -343,7 +343,7 @@ def find_abi_files(date, satellite=16, product='Rad', view='C', mode=[3, 4, 6],
     GCS
 
     inputs:
-    # TODO: 
+    # TODO:
 
     outputs:
         list: list of filenames on local system
@@ -360,18 +360,18 @@ def find_abi_files(date, satellite=16, product='Rad', view='C', mode=[3, 4, 6],
                                           clobber=clobber,
                                           min_storage=min_storage,
                                           verbose=verbose)
-            except OSError:
+            except OSError as e:
+                warnings.warn(e.args[0])
                 download_missing=False
-            except RuntimeError:
-                pass
+            except RuntimeError as e:
+                warnings.warn(e.args[0])
             else:
                 if os.path.exists(save_file):
                     files += [save_file]
         else:
             local_file = _get_download_destination(blob, save_dir,
                                                    replicate_path=replicate_path)
-            if _check_if_file_exists_and_is_valid(local_file, blob,
-                                                  remove_corrupt=remove_corrupt):
+            if _check_file_size_against_blob(local_file, blob):
                 files += [save_file]
     return files
 
@@ -478,18 +478,18 @@ def find_glm_files(date, satellite=16,save_dir='./', replicate_path=True,
                                           clobber=clobber,
                                           min_storage=min_storage,
                                           verbose=verbose)
-            except OSError:
+            except OSError as e:
+                warnings.warn(e.args[0])
                 download_missing=False
             except RuntimeError:
-                pass
+                warnings.warn(e.args[0])
             else:
                 if os.path.exists(save_file):
                     files += [save_file]
         else:
             local_file = _get_download_destination(blob, save_dir,
                                                    replicate_path=replicate_path)
-            if _check_if_file_exists_and_is_valid(local_file, blob,
-                                                  remove_corrupt=remove_corrupt):
+            if _check_file_size_against_blob(local_file, blob):
                 files += [save_file]
     return files
 
