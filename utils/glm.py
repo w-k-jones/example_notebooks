@@ -126,10 +126,10 @@ def get_corrected_glm_x_y(glm_filename, goes_ds):
                 out = get_abi_x_y(glm_lat, glm_lon, goes_ds)
             else:
                 out = (np.array([]), np.array([]))
-        except (OSError, RuntimeError) as e:
-            warnings.warn(e.args[0])
-            warnings.warn(f'Unable to process file {glm_filename}')
-            out = (np.array([]), np.array([]))
+    except (OSError, RuntimeError) as e:
+        warnings.warn(e.args[0])
+        warnings.warn(f'Unable to process file {glm_filename}')
+        out = (np.array([]), np.array([]))
     return out
 
 def get_uncorrected_glm_x_y(glm_filename, goes_ds):
@@ -141,10 +141,10 @@ def get_uncorrected_glm_x_y(glm_filename, goes_ds):
                 out = get_abi_x_y(glm_lat, glm_lon, goes_ds)
             else:
                 out = (np.array([]), np.array([]))
-        except (OSError, RuntimeError) as e:
-            warnings.warn(e.args[0])
-            warnings.warn(f'Unable to process file {glm_filename}')
-            out = (np.array([]), np.array([]))
+    except (OSError, RuntimeError) as e:
+        warnings.warn(e.args[0])
+        warnings.warn(f'Unable to process file {glm_filename}')
+        out = (np.array([]), np.array([]))
     return out
 
 def get_corrected_glm_hist(glm_files, goes_ds, start_time, end_time):
