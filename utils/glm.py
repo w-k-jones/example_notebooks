@@ -3,6 +3,7 @@ import xarray as xr
 import numpy as np
 import pyproj as proj4
 from datetime import timedelta
+import warnings
 
 from glmtools.io.lightning_ellipse import lightning_ellipse_rev
 from lmatools.coordinateSystems import CoordinateSystem
@@ -116,23 +117,31 @@ def get_glm_parallax_offsets(lon, lat, goes_ds):
     return lon_ltg-lon, lat_ltg-lat
 
 def get_corrected_glm_x_y(glm_filename, goes_ds):
-    with xr.open_dataset(glm_filename) as glm_ds:
-        if glm_ds.flash_lat.data.size>0 and glm_ds.flash_lon.data.size>0:
-            lon_offset, lat_offset = get_glm_parallax_offsets(glm_ds.flash_lon.data, glm_ds.flash_lat.data, goes_ds)
-            glm_lon = glm_ds.flash_lon.data + lon_offset
-            glm_lat = glm_ds.flash_lat.data + lat_offset
-            out = get_abi_x_y(glm_lat, glm_lon, goes_ds)
-        else:
+    try:
+        with xr.open_dataset(glm_filename) as glm_ds:
+            if glm_ds.flash_lat.data.size>0 and glm_ds.flash_lon.data.size>0:
+                lon_offset, lat_offset = get_glm_parallax_offsets(glm_ds.flash_lon.data, glm_ds.flash_lat.data, goes_ds)
+                glm_lon = glm_ds.flash_lon.data + lon_offset
+                glm_lat = glm_ds.flash_lat.data + lat_offset
+                out = get_abi_x_y(glm_lat, glm_lon, goes_ds)
+            else:
+                out = (np.array([]), np.array([]))
+        except (OSError, RuntimeError) as e:
+            warnings.warn(e.args[0])
             out = (np.array([]), np.array([]))
     return out
 
 def get_uncorrected_glm_x_y(glm_filename, goes_ds):
-    with xr.open_dataset(glm_filename) as glm_ds:
-        if glm_ds.flash_lat.data.size>0 and glm_ds.flash_lon.data.size>0:
-            glm_lon = glm_ds.flash_lon.data
-            glm_lat = glm_ds.flash_lat.data
-            out = get_abi_x_y(glm_lat, glm_lon, goes_ds)
-        else:
+    try:
+        with xr.open_dataset(glm_filename) as glm_ds:
+            if glm_ds.flash_lat.data.size>0 and glm_ds.flash_lon.data.size>0:
+                glm_lon = glm_ds.flash_lon.data
+                glm_lat = glm_ds.flash_lat.data
+                out = get_abi_x_y(glm_lat, glm_lon, goes_ds)
+            else:
+                out = (np.array([]), np.array([]))
+        except (OSError, RuntimeError) as e:
+            warnings.warn(e.args[0])
             out = (np.array([]), np.array([]))
     return out
 
