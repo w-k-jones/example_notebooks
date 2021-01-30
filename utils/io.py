@@ -269,7 +269,7 @@ def download_blob(blob, save_dir, replicate_path=True,
         if clobber and os.path.exists(save_path):
             os.remove(save_path)
         if verbose:
-            print(f"Downloading {save_path}", flush=true)
+            print(f"Downloading {save_path}", flush=True)
         if _check_free_space_for_blob(blob, os.path.split(save_path)[0],
                                       relative_min_storage=1.25,
                                       absolute_min_storage=min_storage):
