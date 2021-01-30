@@ -62,12 +62,12 @@ def detect_growth_markers(flow, wvd):
     else:
         watershed_markers = filter_labels_by_length_and_mask(watershed_markers, wvd>=-5, 3)
 
-    marker_regions = flow.watershed(-wvd_diff_filtered,
-                                    watershed_markers != 0,
-                                    mask=wvd_diff_filtered<0.25,
-                                    structure=ndi.generate_binary_structure(3,1))
-
-    marker_labels = flow.label(ndi.binary_opening(marker_regions, structure=s_struct))
+    # marker_regions = flow.watershed(-wvd_diff_filtered,
+    #                                 watershed_markers != 0,
+    #                                 mask=wvd_diff_filtered<0.25,
+    #                                 structure=ndi.generate_binary_structure(3,1))
+    marker_labels = flow.label(ndi.binary_opening(wvd_diff_filtered>=0.25, structure=s_struct))
+    # marker_labels = flow.label(ndi.binary_opening(marker_regions, structure=s_struct))
     marker_labels = filter_labels_by_length_and_mask(marker_labels, watershed_markers!=0, 3)
     if isinstance(wvd, xr.DataArray):
         marker_labels = filter_labels_by_length_and_mask(marker_labels, wvd.data>=-2.5, 3)
@@ -80,7 +80,7 @@ def detect_growth_markers(flow, wvd):
 
     return wvd_diff_smoothed, marker_labels
 
-def edge_watershed(flow, field, markers, upper_threshold, lower_threshold, erode_distance=5):
+def edge_watershed(flow, field, markers, upper_threshold, lower_threshold, erode_distance=5, verbose=False):
     if isinstance(field, xr.DataArray):
         field = np.maximum(np.minimum(field.data, upper_threshold), lower_threshold)
     else:
@@ -96,7 +96,7 @@ def edge_watershed(flow, field, markers, upper_threshold, lower_threshold, erode
 
     edges = flow.sobel(field, direction='uphill')
 
-    watershed = flow.watershed(edges, markers, mask=mask, structure=ndi.generate_binary_structure(3,1))
+    watershed = flow.watershed(edges, markers, mask=mask, structure=ndi.generate_binary_structure(3,1), debug_mode=verbose)
 
     s_struct = ndi.generate_binary_structure(2,1)[np.newaxis]
     watershed = watershed*ndi.binary_opening(watershed!=0, structure=s_struct).astype(int)

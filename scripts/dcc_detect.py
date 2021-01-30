@@ -151,14 +151,14 @@ print('Detected markers: area =', np.sum(growth_markers.data!=0), flush=True)
 print('Detected markers: n =', growth_markers.data.max(), flush=True)
 
 print(datetime.now(), 'Detecting thick anvil region', flush=True)
-inner_watershed = edge_watershed(flow, wvd-swd+np.maximum(wvd_growth,0)*5, growth_markers!=0, -5, -15)
+inner_watershed = edge_watershed(flow, wvd-swd+np.maximum(wvd_growth,0)*5, growth_markers!=0, -5, -15, verbose=True)
 inner_labels = filter_labels_by_length_and_mask(flow.label(inner_watershed.data),
                                                 growth_markers.data!=0, 3)
 print('Detected thick anvils: area =', np.sum(inner_labels!=0), flush=True)
 print('Detected thick anvils: n =', inner_labels.max(), flush=True)
 
 print(datetime.now(), 'Detecting thin anvil region', flush=True)
-outer_watershed = edge_watershed(flow, wvd+swd+np.maximum(wvd_growth,0)*5, inner_labels, 0, -10)
+outer_watershed = edge_watershed(flow, wvd+swd+np.maximum(wvd_growth,0)*5, inner_labels, 0, -10, verbose=True)
 print('Detected thin anvils: area =', np.sum(outer_watershed!=0), flush=True)
 
 print(datetime.now(),'Processing GLM data', flush=True)
