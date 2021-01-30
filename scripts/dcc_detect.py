@@ -28,6 +28,7 @@ parser.add_argument('-gd', help='GOES directory',
 parser.add_argument('--extend_path', help='Extend save directory using year/month/day subdirectories',
                     default=True, type=bool)
 
+start_time = datetime.now()
 args = parser.parse_args()
 start_date = parse_date(args.date, fuzzy=True)
 end_date = start_date + timedelta(days=args.days)
@@ -309,4 +310,4 @@ goes_ds.close()
 
 print(datetime.now(), 'Saving to %s' % (save_path), flush=True)
 dataset.to_netcdf(save_path)
-print(datetime.now(), 'Finished successfully', flush=True)
+print(datetime.now(), 'Finished successfully, time elapsed:', datetime.now()-start_time, flush=True)
