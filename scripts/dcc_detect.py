@@ -75,7 +75,7 @@ print(datetime.now(),'Loading ABI data', flush=True)
 print('Saving data to:',goes_data_path, flush=True)
 dates = pd.date_range(start_date, end_date, freq='H', closed='left').to_pydatetime()
 abi_files = io.find_abi_files(dates, satellite=16, product='MCMIP',
-                              view='C', mode=[3,6], save_dir=goes_data_path,
+                              view='C', mode=[3,4,6], save_dir=goes_data_path,
                               replicate_path=True, check_download=True,
                               n_attempts=1, download_missing=True, verbose=True,
                               min_storage=2**30)
