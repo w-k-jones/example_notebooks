@@ -289,14 +289,14 @@ from utils.analysis import apply_weighted_func_to_labels
 tt, yy, xx = np.meshgrid(dataset.t, dataset.y, dataset.x, indexing='ij')
 
 core_step_x = apply_weighted_func_to_labels(core_step_label.data, xx,
-                                            np.maximum(dataset.growth_rate.data-0.25, 0),
+                                            np.maximum(dataset.growth_rate.data-0.25, 0.01),
                                             lambda a,b: np.average(a, weights=b))
 add_dataarray_to_ds(create_dataarray(core_step_x, ('core_step',), "core_step_x",
                                      long_name="x location of core at time step",
                                      dtype=np.float64), dataset)
 
 core_step_y = apply_weighted_func_to_labels(core_step_label.data, yy,
-                                            np.maximum(dataset.growth_rate.data-0.25, 0),
+                                            np.maximum(dataset.growth_rate.data-0.25, 0.01),
                                             lambda a,b: np.average(a, weights=b))
 add_dataarray_to_ds(create_dataarray(core_step_y, ('core_step',), "core_step_y",
                                      long_name="y location of core at time step",
@@ -405,14 +405,14 @@ from utils.analysis import apply_weighted_func_to_labels
 tt, yy, xx = np.meshgrid(dataset.t, dataset.y, dataset.x, indexing='ij')
 
 thick_anvil_step_x = apply_weighted_func_to_labels(thick_anvil_step_label.data, xx,
-                                            np.maximum(wvd.data+15, 0),
+                                            np.maximum(wvd.data+15, 0.01),
                                             lambda a,b: np.average(a, weights=b))
 add_dataarray_to_ds(create_dataarray(thick_anvil_step_x, ('anvil_step',), "thick_anvil_step_x",
                                      long_name="x location of thick_anvil at time step",
                                      dtype=np.float64), dataset)
 
 thick_anvil_step_y = apply_weighted_func_to_labels(thick_anvil_step_label.data, yy,
-                                            np.maximum(dataset.growth_rate.data-0.25, 0),
+                                            np.maximum(dataset.growth_rate.data-0.25, 0.01),
                                             lambda a,b: np.average(a, weights=b))
 add_dataarray_to_ds(create_dataarray(thick_anvil_step_y, ('anvil_step',), "thick_anvil_step_y",
                                      long_name="y location of thick_anvil at time step",
@@ -535,14 +535,14 @@ from utils.analysis import apply_weighted_func_to_labels
 tt, yy, xx = np.meshgrid(dataset.t, dataset.y, dataset.x, indexing='ij')
 
 thin_anvil_step_x = apply_weighted_func_to_labels(thin_anvil_step_label.data, xx,
-                                            np.maximum(wvd.data+15, 0),
+                                            np.maximum(wvd.data+15, 0.01),
                                             lambda a,b: np.average(a, weights=b))
 add_dataarray_to_ds(create_dataarray(thin_anvil_step_x, ('thin_anvil_step',), "thin_anvil_step_x",
                                      long_name="x location of thin_anvil at time step",
                                      dtype=np.float64), dataset)
 
 thin_anvil_step_y = apply_weighted_func_to_labels(thin_anvil_step_label.data, yy,
-                                            np.maximum(dataset.growth_rate.data-0.25, 0),
+                                            np.maximum(dataset.growth_rate.data-0.25, 0.01),
                                             lambda a,b: np.average(a, weights=b))
 add_dataarray_to_ds(create_dataarray(thin_anvil_step_y, ('thin_anvil_step',), "thin_anvil_step_y",
                                      long_name="y location of thin_anvil at time step",
