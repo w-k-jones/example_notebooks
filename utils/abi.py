@@ -1,5 +1,5 @@
 import numpy as np
-from pyproj import Proj
+from pyproj import Proj, Geod
 from dateutil.parser import parse as parse_date
 from .geo import get_sza
 
@@ -17,6 +17,32 @@ def get_abi_lat_lon(dataset, dtype=float):
     lons[lons>=1E30] = np.nan
     lats[lats>=1E30] = np.nan
     return lats, lons
+
+def get_abi_pixel_lengths(dataset):
+    """
+    Returns the length scales in x and y of each pixel in the input dataset
+    """
+    g = Geod(ellps='WGS84')
+    lat, lon = get_abi_lat_lon(dataset)
+    dy, dx = np.zeros(lat.shape, dtype=float), np.zeros(lat.shape, dtype=float)
+    dy[:-1] = g.inv(lon[:-1],lat[:-1],lon[1:],lat[1:])[-1]/1e3
+    dx[:,:-1] = g.inv(lon[:,:-1],lat[:,:-1],lon[:,1:],lat[:,1:])[-1]/1e3
+    dy[1:]+=dy[:-1]
+    dy[1:-1]/=2
+    dx[:,1:]+=dx[:,:-1]
+    dx[:,1:-1]/=2
+    return dx, dy
+
+def get_abi_pixel_area(dataset):
+    # lat, lon = get_abi_lat_lon(dataset, dtype=dtype)
+    # nadir_res = np.array([dataset.spatial_resolution.split('km')[0]]).astype(dtype)
+    # xx, yy = np.meshgrid(dataset.astype(dtype).x.data, dataset.astype(dtype).y.data)
+    # lx_factor = np.cos(np.abs(np.radians(dataset.goes_imager_projection.longitude_of_projection_origin-lon))+np.abs(xx))
+    # ly_factor = np.cos(np.abs(np.radians(dataset.goes_imager_projection.latitude_of_projection_origin-lat))+np.abs(yy))
+    # area = nadir_res**2/(lx_factor*ly_factor)
+    dx, dy = get_abi_pixel_lengths(dataset)
+    area = dx*dy
+    return area
 
 def get_abi_x_y(lat, lon, dataset):
     p = get_abi_proj(dataset)
