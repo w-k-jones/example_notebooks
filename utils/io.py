@@ -298,7 +298,7 @@ def download_blob(blob, save_dir, replicate_path=True,
         else:
             raise OSError("Not enough storage space available for download")
     if os.path.exists(save_path):
-        if _check_file_size_against_blob(local_file, blob):
+        if _check_file_size_against_blob(save_path, blob):
             return save_path
         else:
             raise RuntimeError(f"{save_path}: existing file not valid")
