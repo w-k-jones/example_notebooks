@@ -251,7 +251,7 @@ def _get_download_destination(blob, save_dir, replicate_path=True):
 
 def download_blob(blob, save_dir, replicate_path=True,
                   check_download=False, n_attempts=1, clobber=False,
-                  min_storage=2**30, verbose=False):
+                  min_storage=2**30, verbose=False, remove_corrupt=True):
     """
     Download a single blob from GCS
 
@@ -292,11 +292,16 @@ def download_blob(blob, save_dir, replicate_path=True,
                                     n_attempts=n_attempts-1,
                                     clobber=clobber)
                 else:
+                    if remove_corrupt:
+                        os.remove(save_path)
                     raise RuntimeError(f"{save_path}: downloaded file not valid")
         else:
             raise OSError("Not enough storage space available for download")
     if os.path.exists(save_path):
-        return save_path
+        if _check_file_size_against_blob(local_file, blob):
+            return save_path
+        else:
+            raise RuntimeError(f"{save_path}: existing file not valid")
     else:
         raise RuntimeError(f"{save_path}: downloaded file not found")
 
@@ -372,7 +377,7 @@ def find_abi_files(date, satellite=16, product='Rad', view='C', mode=[3, 4, 6],
             local_file = _get_download_destination(blob, save_dir,
                                                    replicate_path=replicate_path)
             if _check_file_size_against_blob(local_file, blob):
-                files += [save_file]
+                files += [local_file]
     return files
 
 def _find_glm_blobs(date, satellite=16):
