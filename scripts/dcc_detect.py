@@ -522,11 +522,11 @@ for field in (bt, wvd, swd, dataset.growth_rate):
 from utils.analysis import slice_label_da
 thin_anvil_step_label = slice_label_da(dataset.thin_anvil_label)
 add_dataarray_to_ds(thin_anvil_step_label, dataset)
-dataset.coords["anvil_step"] = np.arange(1, thin_anvil_step_label.max()+1, dtype=np.int32)
+dataset.coords["thin_anvil_step"] = np.arange(1, thin_anvil_step_label.max()+1, dtype=np.int32)
 
 # Now get individual step
 for field in (bt, wvd, swd, dataset.growth_rate):
-    [add_dataarray_to_ds(da, dataset) for da in get_stats_for_labels(dataset.thin_anvil_step_label, field, dim='anvil_step')]
+    [add_dataarray_to_ds(da, dataset) for da in get_stats_for_labels(dataset.thin_anvil_step_label, field, dim='thin_anvil_step')]
 
 # Now we have stats of each field for each core and each core time step
 # Next get other data: weighted x,y,lat,lon locations for each step, t per step
@@ -537,20 +537,20 @@ tt, yy, xx = np.meshgrid(dataset.t, dataset.y, dataset.x, indexing='ij')
 thin_anvil_step_x = apply_weighted_func_to_labels(thin_anvil_step_label.data, xx,
                                             np.maximum(wvd.data+15, 0),
                                             lambda a,b: np.average(a, weights=b))
-add_dataarray_to_ds(create_dataarray(thin_anvil_step_x, ('anvil_step',), "thin_anvil_step_x",
+add_dataarray_to_ds(create_dataarray(thin_anvil_step_x, ('thin_anvil_step',), "thin_anvil_step_x",
                                      long_name="x location of thin_anvil at time step",
                                      dtype=np.float64), dataset)
 
 thin_anvil_step_y = apply_weighted_func_to_labels(thin_anvil_step_label.data, yy,
                                             np.maximum(dataset.growth_rate.data-0.25, 0),
                                             lambda a,b: np.average(a, weights=b))
-add_dataarray_to_ds(create_dataarray(thin_anvil_step_y, ('anvil_step',), "thin_anvil_step_y",
+add_dataarray_to_ds(create_dataarray(thin_anvil_step_y, ('thin_anvil_step',), "thin_anvil_step_y",
                                      long_name="y location of thin_anvil at time step",
                                      dtype=np.float64), dataset)
 
 thin_anvil_step_t = apply_func_to_labels(thin_anvil_step_label.data, tt,
                                    np.nanmin)
-add_dataarray_to_ds(create_dataarray(thin_anvil_step_t, ('anvil_step',), "thin_anvil_step_t",
+add_dataarray_to_ds(create_dataarray(thin_anvil_step_t, ('thin_anvil_step',), "thin_anvil_step_t",
                                      long_name="time of thin_anvil at step",
                                      dtype="datetime64[ns]"), dataset)
 
@@ -575,16 +575,16 @@ p = get_abi_proj(dataset)
 thin_anvil_step_lons, thin_anvil_step_lats = p(thin_anvil_step_x*dataset.goes_imager_projection.perspective_point_height,
                                    thin_anvil_step_y*dataset.goes_imager_projection.perspective_point_height,
                                    inverse=True)
-add_dataarray_to_ds(create_dataarray(thin_anvil_step_lons, ('anvil_step',), "thin_anvil_step_lon",
+add_dataarray_to_ds(create_dataarray(thin_anvil_step_lons, ('thin_anvil_step',), "thin_anvil_step_lon",
                                      long_name="longitude of thin_anvil at time step",
                                      dtype=np.float32), dataset)
-add_dataarray_to_ds(create_dataarray(thin_anvil_step_lats, ('anvil_step',), "thin_anvil_step_lat",
+add_dataarray_to_ds(create_dataarray(thin_anvil_step_lats, ('thin_anvil_step',), "thin_anvil_step_lat",
                                      long_name="latitude of thin_anvil at time step",
                                      dtype=np.float32), dataset)
 
 thin_anvil_step_glm_count = apply_func_to_labels(thin_anvil_step_label.data,
                                            dataset.glm_flash_count.data, np.nansum)
-add_dataarray_to_ds(create_dataarray(thin_anvil_step_glm_count, ('anvil_step',), "thin_anvil_step_glm_count",
+add_dataarray_to_ds(create_dataarray(thin_anvil_step_glm_count, ('thin_anvil_step',), "thin_anvil_step_glm_count",
                                      long_name="number of GLM flashes for thin_anvil at time step",
                                      dtype=np.int32), dataset)
 
@@ -597,7 +597,7 @@ add_dataarray_to_ds(create_dataarray(thin_anvil_glm_count, ('anvil',), "thin_anv
 aa = np.meshgrid(dataset.t, dataset.area, indexing='ij')[1].reshape(tt.shape)
 
 thin_anvil_step_pixels = np.bincount(dataset.thin_anvil_step_label.data.ravel())[1:]
-add_dataarray_to_ds(create_dataarray(thin_anvil_step_pixels, ('anvil_step',), "thin_anvil_step_pixels",
+add_dataarray_to_ds(create_dataarray(thin_anvil_step_pixels, ('thin_anvil_step',), "thin_anvil_step_pixels",
                                      long_name="number of pixels for thin_anvil at time step",
                                      dtype=np.int32), dataset)
 
@@ -607,7 +607,7 @@ add_dataarray_to_ds(create_dataarray(thin_anvil_total_pixels, ('anvil',), "thin_
                                      dtype=np.int32), dataset)
 
 thin_anvil_step_area = apply_func_to_labels(dataset.thin_anvil_step_label.data, aa, np.nansum)
-add_dataarray_to_ds(create_dataarray(thin_anvil_step_area, ('anvil_step',), "thin_anvil_step_area",
+add_dataarray_to_ds(create_dataarray(thin_anvil_step_area, ('thin_anvil_step',), "thin_anvil_step_area",
                                      long_name="area of thin_anvil at time step",
                                      dtype=np.float32), dataset)
 
@@ -618,7 +618,7 @@ add_dataarray_to_ds(create_dataarray(thin_anvil_total_area, ('anvil',), "thin_an
 
 thin_anvil_index_for_step = apply_func_to_labels(dataset.thin_anvil_step_label.data,
                                            dataset.thin_anvil_label.data, np.nanmax)
-add_dataarray_to_ds(create_dataarray(thin_anvil_index_for_step, ('anvil_step',), "thin_anvil_index_for_step",
+add_dataarray_to_ds(create_dataarray(thin_anvil_index_for_step, ('thin_anvil_step',), "thin_anvil_index_for_step",
                                      long_name="thin_anvil index for each thin_anvil time step",
                                      dtype=np.int32), dataset)
 

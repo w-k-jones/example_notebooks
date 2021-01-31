@@ -49,7 +49,7 @@ def create_dataarray(array, dims, name, long_name=None, units=None, dtype=None):
         da.attrs["long_name"] = name
     if units:
         da.attrs["units"] = units
-    
+
     return da
 
 def get_bulk_stats(da):
@@ -90,8 +90,8 @@ def create_new_goes_ds(goes_ds):
     new_ds = xr.Dataset(coords=goes_coords)
     new_ds["goes_imager_projection"] = goes_ds.goes_imager_projection
     lat, lon = get_abi_lat_lon(new_ds)
-    add_dataarray_to_ds(create_dataarray(lat, ('x','y'), 'lat', long_name="latitude", dtype=np.float32), new_ds)
-    add_dataarray_to_ds(create_dataarray(lon, ('x','y'), 'lon', long_name="longitude", dtype=np.float32), new_ds)
-    add_dataarray_to_ds(create_dataarray(get_abi_pixel_area(new_ds), ('x','y'), 'area',
+    add_dataarray_to_ds(create_dataarray(lat, ('y', 'x'), 'lat', long_name="latitude", dtype=np.float32), new_ds)
+    add_dataarray_to_ds(create_dataarray(lon, ('y', 'x'), 'lon', long_name="longitude", dtype=np.float32), new_ds)
+    add_dataarray_to_ds(create_dataarray(get_abi_pixel_area(new_ds), ('y', 'x'), 'area',
                                          long_name="pixel area", units='km^2', dtype=np.float32), new_ds)
     return new_ds
