@@ -69,11 +69,11 @@ def get_spatial_stats(da):
     return mean_da, std_da, median_da, max_da, min_da
 
 def get_temporal_stats(da):
-    mean_da = create_dataarray(da.mean('t').data, ('x','y'), f"{da.name}_temporal_mean", long_name=f"Temporal mean of {da.long_name}", units=da.units, dtype=da.dtype)
-    std_da = create_dataarray(da.std('t').data, ('x','y'), f"{da.name}_temporal_std", long_name=f"Temporal standard deviation of {da.long_name}", units=da.units, dtype=da.dtype)
-    median_da = create_dataarray(da.median('t').data, ('x','y'), f"{da.name}_temporal_median", long_name=f"Temporal median of {da.long_name}", units=da.units, dtype=da.dtype)
-    max_da = create_dataarray(da.max('t').data, ('x','y'), f"{da.name}_temporal_max", long_name=f"Temporal maximum of {da.long_name}", units=da.units, dtype=da.dtype)
-    min_da = create_dataarray(da.min('t').data, ('x','y'), f"{da.name}_temporal_min", long_name=f"Temporal minimum of {da.long_name}", units=da.units, dtype=da.dtype)
+    mean_da = create_dataarray(da.mean('t').data, ('y', 'x'), f"{da.name}_temporal_mean", long_name=f"Temporal mean of {da.long_name}", units=da.units, dtype=da.dtype)
+    std_da = create_dataarray(da.std('t').data, ('y', 'x'), f"{da.name}_temporal_std", long_name=f"Temporal standard deviation of {da.long_name}", units=da.units, dtype=da.dtype)
+    median_da = create_dataarray(da.median('t').data, ('y', 'x'), f"{da.name}_temporal_median", long_name=f"Temporal median of {da.long_name}", units=da.units, dtype=da.dtype)
+    max_da = create_dataarray(da.max('t').data, ('y', 'x'), f"{da.name}_temporal_max", long_name=f"Temporal maximum of {da.long_name}", units=da.units, dtype=da.dtype)
+    min_da = create_dataarray(da.min('t').data, ('y', 'x'), f"{da.name}_temporal_min", long_name=f"Temporal minimum of {da.long_name}", units=da.units, dtype=da.dtype)
     return mean_da, std_da, median_da, max_da, min_da
 
 def n_unique_along_axis(a, axis=0):

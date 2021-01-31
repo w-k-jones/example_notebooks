@@ -105,11 +105,11 @@ def get_stats_for_labels(labels, da, dim=None):
 
 from .dataset import create_dataarray, n_unique_along_axis
 def get_label_stats(da, ds):
-    add_dataarray_to_ds(create_dataarray(np.count_nonzero(da, 0)/da.t.size, ('x','y'),
+    add_dataarray_to_ds(create_dataarray(np.count_nonzero(da, 0)/da.t.size, ('y', 'x'),
                                          f"{da.name}_fraction",
                                          long_name=f"Fractional coverage of {da.long_name}",
                                          units="", dtype=np.float32), ds)
-    add_dataarray_to_ds(create_dataarray(n_unique_along_axis(da.data, 0), ('x','y'),
+    add_dataarray_to_ds(create_dataarray(n_unique_along_axis(da.data, 0), ('y', 'x'),
                                          f"{da.name}_unique_count",
                                          long_name=f"Number of unique {da.long_name}",
                                          units="", dtype=np.int32), ds)
