@@ -298,12 +298,13 @@ def download_blob(blob, save_dir, replicate_path=True,
         else:
             raise OSError("Not enough storage space available for download")
     if os.path.exists(save_path):
-        if _check_file_size_against_blob(save_path, blob):
-            return save_path
-        else:
-            if remove_corrupt:
-                os.remove(save_path)
-            raise RuntimeError(f"{save_path}: existing file not valid")
+        return save_path
+        # if _check_file_size_against_blob(save_path, blob):
+        #     return save_path
+        # else:
+        #     if remove_corrupt:
+        #         os.remove(save_path)
+        #     raise RuntimeError(f"{save_path}: existing file not valid")
     else:
         raise RuntimeError(f"{save_path}: downloaded file not found")
 
