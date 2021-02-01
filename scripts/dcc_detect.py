@@ -75,7 +75,7 @@ if not os.path.isdir(goes_data_path):
 print(datetime.now(),'Loading ABI data', flush=True)
 print('Saving data to:',goes_data_path, flush=True)
 dates = pd.date_range(start_date, end_date, freq='H', closed='left').to_pydatetime()
-abi_files = io.find_abi_files(dates[-4], satellite=16, product='MCMIP',
+abi_files = io.find_abi_files(dates, satellite=16, product='MCMIP',
                               view='C', mode=[3,4,6], save_dir=goes_data_path,
                               replicate_path=True, check_download=True,
                               n_attempts=1, download_missing=False, verbose=True,
@@ -170,7 +170,7 @@ print('Detected markers: n =', growth_markers.data.max(), flush=True)
 
 print(datetime.now(), 'Detecting thick anvil region', flush=True)
 inner_watershed = edge_watershed(flow, wvd-swd+np.maximum(wvd_growth,0)*5, growth_markers!=0, -5, -15, verbose=True)
-inner_labels = filter_labels_by_length_and_mask(flow.label(inner_watershed.data),
+inner_labels = filter_labels_by_length_and_mask(flow.label(inner_watershed),
                                                 growth_markers.data!=0, 3)
 print('Detected thick anvils: area =', np.sum(inner_labels!=0), flush=True)
 print('Detected thick anvils: n =', inner_labels.max(), flush=True)
