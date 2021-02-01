@@ -231,14 +231,68 @@ class Flow:
                                          max_iter=max_iter,
                                          debug_mode=debug_mode)
 
+# Old labelling function - slow and buggy
+    # def label(self, data, structure=ndi.generate_binary_structure(3,1)):
+    #     from .legacy_flow import Flow_Func, flow_label
+    #
+    #     l_flow = Flow_Func(self.flow_for[...,0], self.flow_back[...,0],
+    #                           self.flow_for[...,1], self.flow_back[...,1])
+    #
+    #     return flow_label(data, l_flow, structure=structure)
 
-    def label(self, data, structure=ndi.generate_binary_structure(3,1)):
-        from .legacy_flow import Flow_Func, flow_label
+    def label(self, data, structure=ndi.generate_binary_structure(3,1), dtype=np.int32):
+        return flow_label(self, data, structure=structure, dtype=dtype)
 
-        l_flow = Flow_Func(self.flow_for[...,0], self.flow_back[...,0],
-                              self.flow_for[...,1], self.flow_back[...,1])
+def flow_label(flow, mask, structure=ndi.generate_binary_structure(3,1), dtype=np.int32):
+    """
+    Label 3d connected objects in a semi-Lagrangian reference frame
+    """
+    from utils.analysis import flat_label
+#     Get flat (2d) labels
+    flat_labels = flat_label(mask.astype(bool), structure=structure).astype(dtype)
 
-        return flow_label(data, l_flow, structure=structure)
+    back_label, forward_label = flow.convolve(flat_labels, method='nearest', dtype=dtype,
+                                              structure=structure*np.array([1,0,1])[:,np.newaxis, np.newaxis])
+
+    processed_labels = []
+    label_map = {}
+
+    bins = np.cumsum(np.bincount(flat_labels.ravel()))
+    args = np.argsort(flat_labels.ravel())
+
+    for i in range(1, bins.size):
+        if i not in processed_labels:
+            label_map[i] = find_neighbour_labels(i, bins, args, processed_labels, forward_label, back_label)
+
+    new_labels = np.zeros(mask.shape, dtype=dtype)
+
+    for ik, k in enumerate(label_map):
+        for i in label_map[k]:
+            if bins[i]>bins[i-1]:
+                new_labels.ravel()[args[bins[i-1]:bins[i]]] = ik+1
+
+    assert np.all(new_labels.astype(bool)==mask.astype(bool))
+    return new_labels
+
+def find_neighbour_labels(label, bins, args, processed_labels, forward_labels, back_labels):
+    """
+    Recursive function to find all the neighbouring, overlapping 2d regions for each label
+    """
+    processed_labels.append(label)
+    if bins[label]>bins[label-1]:
+        return_list = [label]
+        for i in np.unique(forward_labels.ravel()[args[bins[label-1]:bins[label]]]):
+            if i>0 and i not in processed_labels:
+                return_list.extend(find_neighbour_labels(i, bins, args, processed_labels,
+                                                         forward_labels, back_labels))
+        for i in np.unique(back_labels.ravel()[args[bins[label-1]:bins[label]]]):
+            if i>0 and i not in processed_labels:
+                return_list.extend(find_neighbour_labels(i, bins, args, processed_labels,
+                                                         forward_labels, back_labels))
+
+    else:
+        return_list = []
+    return return_list
 
 
 # class Flow_dev:
