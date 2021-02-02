@@ -113,7 +113,7 @@ def _get_channel_range(data, min=0, max=1, gamma=1):
     return out
 
 def get_abi_rgb(mcmip_ds, gamma=0.4, contrast=100,
-                correct_sza=False, min_sza=0.05):
+                correct_sza=False, min_sza=0.05, night_IR=False):
     if correct_sza:
         cossza = np.cos(get_goes_sza(mcmip_ds))
         cossza = np.maximum(cossza, min_sza)
@@ -128,7 +128,9 @@ def get_abi_rgb(mcmip_ds, gamma=0.4, contrast=100,
                        mcmip_ds.CMI_C02,
                        mcmip_ds.CMI_C03,
                        gamma=gamma, contrast=contrast)
-
+    if night_IR:
+        IR = _contrast_correction((1 - ((np.minimum(np.maximum(mcmip_ds.CMI_C13.data, 90), 313) - 90) / (313-90))), contrast=contrast)
+        RGB = np.stack([np.maximum(RGB[...,i], IR) for i in range(3)], -1)
     return RGB
 
 def _get_rgb(C01, C02, C03, gamma=0.4, contrast=0.05):

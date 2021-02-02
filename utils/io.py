@@ -13,6 +13,10 @@ from dateutil.parser import parse as parse_date
 import numpy as np
 import xarray as xr
 
+storage_client = storage.Client()
+goes_16_bucket = storage_client.get_bucket('gcp-public-data-goes-16')
+goes_17_bucket = storage_client.get_bucket('gcp-public-data-goes-17')
+
 def _test_subprocess_command(shell_command):
     """
     Test if a shell command can be successfully executed by suprocess
@@ -176,8 +180,12 @@ def _find_abi_blobs(date, satellite=16, product='Rad', view='C', mode=3, channel
     -- list of Blobs: list of blobs found using the prefix generated from the
         supplied inputs
     """
-    storage_client = storage.Client()
-    goes_bucket = storage_client.get_bucket('gcp-public-data-goes-%02d' % satellite)
+    if satellite==16:
+        goes_bucket = goes_16_bucket
+    elif satellite==17:
+        goes_bucket = goes_17_bucket
+    else:
+        raise ValueError("Invalid input for satellite keyword")
 
     doy = (date - datetime(date.year,1,1)).days+1
 
@@ -384,9 +392,13 @@ def find_abi_files(date, satellite=16, product='Rad', view='C', mode=[3, 4, 6],
     return files
 
 def _find_glm_blobs(date, satellite=16):
-    storage_client = storage.Client()
-    goes_bucket = storage_client.get_bucket('gcp-public-data-goes-%02d' % satellite)
-
+    if satellite==16:
+        goes_bucket = goes_16_bucket
+    elif satellite==17:
+        goes_bucket = goes_17_bucket
+    else:
+        raise ValueError("Invalid input for satellite keyword")
+    
     doy = (date - datetime(date.year,1,1)).days+1
 
 
