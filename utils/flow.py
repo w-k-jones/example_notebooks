@@ -248,21 +248,27 @@ def flow_label(flow, mask, structure=ndi.generate_binary_structure(3,1), dtype=n
     Label 3d connected objects in a semi-Lagrangian reference frame
     """
     from utils.analysis import flat_label
+    from collections import deque
 #     Get flat (2d) labels
     flat_labels = flat_label(mask.astype(bool), structure=structure).astype(dtype)
 
-    back_label, forward_label = flow.convolve(flat_labels, method='nearest', dtype=dtype,
+    back_labels, forward_labels = flow.convolve(flat_labels, method='nearest', dtype=dtype,
                                               structure=structure*np.array([1,0,1])[:,np.newaxis, np.newaxis])
 
-    processed_labels = []
+    processed_labels = deque()
     label_map = {}
 
     bins = np.cumsum(np.bincount(flat_labels.ravel()))
     args = np.argsort(flat_labels.ravel())
 
-    for i in range(1, bins.size):
-        if i not in processed_labels:
-            label_map[i] = find_neighbour_labels(i, bins, args, processed_labels, forward_label, back_label)
+    for label in range(1, bins.size):
+        if label not in processed_labels:
+            label_map[label] = deque([label])
+            i = 0
+            while i < len(label_map[label]):
+                find_neighbour_labels(label_map[label][i], label_map[label], bins, args,
+                                      processed_labels, forward_labels, back_labels)
+                i+=1
 
     new_labels = np.zeros(mask.shape, dtype=dtype)
 
@@ -274,25 +280,46 @@ def flow_label(flow, mask, structure=ndi.generate_binary_structure(3,1), dtype=n
     assert np.all(new_labels.astype(bool)==mask.astype(bool))
     return new_labels
 
-def find_neighbour_labels(label, bins, args, processed_labels, forward_labels, back_labels):
+def find_neighbour_labels(label, label_stack, bins, args, processed_labels,
+                          forward_labels, back_labels,
+                          overlap=0):
     """
-    Recursive function to find all the neighbouring, overlapping 2d regions for each label
+    Find the neighbouring labels at the previous and next time steps to a given
+    label
     """
     processed_labels.append(label)
     if bins[label]>bins[label-1]:
-        return_list = [label]
-        for i in np.unique(forward_labels.ravel()[args[bins[label-1]:bins[label]]]):
-            if i>0 and i not in processed_labels:
-                return_list.extend(find_neighbour_labels(i, bins, args, processed_labels,
-                                                         forward_labels, back_labels))
-        for i in np.unique(back_labels.ravel()[args[bins[label-1]:bins[label]]]):
-            if i>0 and i not in processed_labels:
-                return_list.extend(find_neighbour_labels(i, bins, args, processed_labels,
-                                                         forward_labels, back_labels))
+        for new_label in np.unique(forward_labels.ravel()[args[bins[label-1]:bins[label]]]):
+            if new_label>0 and new_label not in processed_labels:
+                label_stack.append(new_label)
 
-    else:
-        return_list = []
-    return return_list
+        for new_label in np.unique(back_labels.ravel()[args[bins[label-1]:bins[label]]]):
+            if new_label>0 and new_label not in processed_labels:
+                label_stack.append(new_label)
+
+
+
+
+#Old, recursive version. Replaced as in some cases could hit the recursion cap
+# def find_neighbour_labels(label, bins, args, processed_labels, forward_labels, back_labels):
+#     """
+#     Recursive function to find all the neighbouring, overlapping 2d regions for each label
+#     """
+#     processed_labels.append(label)
+#     if bins[label]>bins[label-1]:
+#         return_list = [label]
+#         for i in np.unique(forward_labels.ravel()[args[bins[label-1]:bins[label]]]):
+#             if i>0 and i not in processed_labels:
+#                 return_list.extend(find_neighbour_labels(i, bins, args, processed_labels,
+#                                                          forward_labels, back_labels))
+#         for i in np.unique(back_labels.ravel()[args[bins[label-1]:bins[label]]]):
+#             if i>0 and i not in processed_labels:
+#                 return_list.extend(find_neighbour_labels(i, bins, args, processed_labels,
+#                                                          forward_labels, back_labels))
+#
+#     else:
+#         return_list = []
+#     return return_list
 
 
 # class Flow_dev:
