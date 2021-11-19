@@ -193,7 +193,7 @@ if len(glm_files)==0:
     glm_grid = xr.zeros_like(wvd)
 else:
     print(datetime.now(),'Regridding GLM data', flush=True)
-    glm_grid = glm.regrid_glm(glm_files, goes_ds, corrected=False)
+    glm_grid = glm.regrid_glm(glm_files, goes_ds, corrected=False) 
 
 print(datetime.now(),'Calculating marker distances', flush=True)
 marker_distance = get_marker_distance(growth_markers, time_range=3)

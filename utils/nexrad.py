@@ -46,6 +46,9 @@ def get_gates_from_tar(nexrad_archive):
     return times, alts, lats, lons, refs
 
 def map_nexrad_to_goes(nexrad_lat, nexrad_lon, nexrad_alt, goes_ds):
+    if nexrad_lat.size == nexrad_lon.size == 0:
+        return np.array([]), np.array([])
+    
     rad_x, rad_y = get_abi_x_y(nexrad_lat, nexrad_lon, goes_ds)
     height = goes_ds.goes_imager_projection.perspective_point_height
     lat_0 = goes_ds.goes_imager_projection.latitude_of_projection_origin
